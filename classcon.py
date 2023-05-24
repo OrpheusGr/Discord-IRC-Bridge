@@ -166,6 +166,8 @@ def on_kick(connection, event):
             connection.join(channel)
 
 def on_featurelist(connection, event):
+    if connection != mom:
+        return
     global network
     featlen = len(event.arguments)
     for i in range(featlen):
@@ -175,6 +177,8 @@ def on_featurelist(connection, event):
             network = spl[1]
 
 def on_nick(connection, event):
+    if connection != mom:
+        return
     nick = event.source.nick
     host = event.source.host
     newnick = event.target
