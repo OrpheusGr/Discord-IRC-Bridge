@@ -26,7 +26,8 @@ def startloop(nick, server, prt, ch, wh):
     global loopin
     loopin = 1
     while loopin:
-        reactor.process_once()
+        reactor.process_once(0.2)
+        time.sleep(0.2)
 
 def stoploop():
     global loopin
