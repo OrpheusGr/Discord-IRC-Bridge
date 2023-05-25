@@ -9,6 +9,7 @@ Install the following python libraries using pip:
 
 - irc
 - discord.py
+- discord-webhook
 
 Clone/Download this repository and then make a copy of examplesettings.py as settings.py
 
