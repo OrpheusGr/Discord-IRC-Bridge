@@ -2,3 +2,5 @@ midclasscon.py
 oldclasscon.py
 settings.py
 __pycache__/
+setupwizard.py
+config.pkl

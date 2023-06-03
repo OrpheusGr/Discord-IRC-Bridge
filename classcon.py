@@ -1,12 +1,16 @@
 from discord_webhook import DiscordWebhook
 import irc.client
 import time
+import re
+from settings import *
 reactor = irc.client.Reactor()
 irc.client.ServerConnection.buffer_class.encoding = "UTF-8"
 irc.client.ServerConnection.buffer_class.errors = "replace"
 loopin = 0
 botdict = {}
 network = ""
+disconnectretries = 0
+quitf = {}
 
 def set_chan(chan, wh):
     global channel
@@ -45,11 +49,17 @@ def momsendmsg(message):
     global momobj
     momobj.sendmsg(message)
 
+def sendtoboth(message):
+    time.sleep(1)
+    momsendmsg(message)
+    discord.send_my_message(message)
+
 def get_start_time():
     global start_time
     return start_time
 
 def get_uptime():
+    result = ""
     uptime = int(time.time()) - get_start_time()
     day = uptime // (24 * 3600)
     uptime = uptime % (24 * 3600)
@@ -58,9 +68,28 @@ def get_uptime():
     minutes = uptime // 60
     uptime %= 60
     seconds = uptime
-    result = "%sd%sh%sm%s" % (day, hour, minutes, seconds)
-    result = result + "s"
+    if day > 0:
+        result += str(day) + "d "
+    if hour > 0:
+        result += str(hour) + "h "
+    if minutes > 0:
+        result += str(minutes) + "m "
+    if seconds > 0:
+        result += str(seconds) + "s "
     return result
+
+def stripcolors(m):
+        m = m.replace("\x31", "")
+        m = m.replace("\x0f", "")
+        m = m.replace("\x02", "**")
+        m = m.replace("\x1d", "_")
+        regexc = re.compile("\x03(?:\d{1,2}(?:,\d{1,2})?)?", re.UNICODE)
+        m = regexc.sub("", m)
+        if m.count("**") % 2 != 0:
+            m = m + "**"
+        if m.count("_") % 2 != 0:
+            m = m + "_"
+        return m
 
 def on_connectbot(connection, event):
     global botdict
@@ -70,6 +99,8 @@ def on_connectbot(connection, event):
         botdict[connection.get_nickname()] = connection.discordid
         print(botdict)
     elif connection == mom:
+        print("Successful connection to", event.source)
+        time.sleep(2)
         discord.setstatus()
     connection.join(channel)
 
@@ -92,12 +123,13 @@ def on_pubmsg(connection, event):
     if sender in botdict:
         return
     host = event.source.host
-    messagenot = event.arguments[0]
+    messagenot = stripcolors(event.arguments[0])
     message = messagenot.split()
-    if message[0] == "!uptime":
+    cmd = message[0].lower()
+    #public commands blocks
+    if cmd == "!relayuptime":
         uptime = get_uptime()
-        momsendmsg("I've been running for " + uptime)
-        discord.send_my_message("I've been running for  " + uptime)
+        sendtoboth("I've been running for " + uptime)
     for i in range(len(message)):
         msgi = message[i]
         msgii = msgi[:-1]
@@ -112,6 +144,15 @@ def on_pubmsg(connection, event):
         print("[IRC]", sender, ":", finalmsg)
     webhook = DiscordWebhook(url=webhooklink, content=finalmsg, username=sender + "_[IRC]")
     response = webhook.execute()
+    #IRC bot ops commands block
+    if sender in IRCBOTOPS:
+        if cmd == "!shutdown":
+            uptime = get_uptime()
+            discord.send_my_message("**Shutdown request by " +  sender + " on IRC. I was alive for " + uptime + "**")
+            connection.quit("It was " + sender + ", they pressed the red button! Agh! *dead* I was alive for " + uptime)
+            time.sleep(2)
+            discord.shutdown()
+            stoploop()
 
 def on_join(connection, event):
     global mom
@@ -126,6 +167,8 @@ def on_join(connection, event):
         discord.send_my_message("-> **" + event.source.nick + " joined " + event.target + "**")
     else:
         time.sleep(5)
+        with thread_lock:
+             print("[IRC] Joined", channel)
         discord.send_my_message("**Relay is up, do !joinirc to get a client**")
 
 def on_part(connection, event):
@@ -178,13 +221,38 @@ def on_featurelist(connection, event):
             network = spl[1]
 
 def on_nick(connection, event):
+    global botdict
     if connection != mom:
         return
     nick = event.source.nick
     host = event.source.host
     newnick = event.target
+    if nick in botdict:
+        x = botdict[nick]
+        botdict.pop(nick)
+        botdict[newnick] = x
     event_msg = "**%s** *is now known as* **%s**" % (nick, newnick)
     discord.send_my_message(event_msg)
+
+def on_disconnect(connection, event):
+    if connection == mom:
+        if connection.sent_quit_mom == 1:
+             return
+        global disconnectretries
+        disconnectretries += 1
+        if disconnectretries == 3:
+             discord.send_my_message("Retried  3 times, cannot connect to " + event.source + " " + event.arguments[0] + " Closing process.")
+             time.sleep(1)
+             discord.shutdown()
+             stoploop()
+        connection.reconnect()
+        return
+    if connection.sent_quit != 1:
+        discord.send_my_message("<@" + connection.discordid + ">" + " Disconnected from " + event.source + " " + event.arguments[0])
+    discord.condict.pop(connection.discordid)
+    botdict.pop(connection.get_nickname())
+    print(botdict)
+    print(discord.condict)
 
 class IRCbots():
     def __init__(self, nik, srv, prt, ch, mom=False, wh=None, discordid=None):
@@ -199,8 +267,10 @@ class IRCbots():
             self.conn.discordid = "Relay Mother Bot"
         if mom == True:
             self.mother = self.conn
+            setattr(self.conn, "sent_quit_mom", 0)
         else:
             self.mother = None
+            setattr(self.conn, "sent_quit", 0)
         if wh:
             self.webhook = wh
         else:
@@ -219,6 +289,7 @@ class IRCbots():
             c.add_global_handler("kick", on_kick)
             c.add_global_handler("featurelist", on_featurelist)
             c.add_global_handler("nick", on_nick)
+            c.add_global_handler("disconnect", on_disconnect)
 
     def sendmsg(self, msg):
         if self.conn.is_connected() == False:

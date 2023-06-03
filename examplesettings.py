@@ -18,9 +18,15 @@ DISCORDCHAN = ""
 
 DISCORDSERVER = ""
 
+# DISCORDBOTOPS - Users that will be able to use commands of moderation. Should be UserID's seperated by spaces)
+DISCORDBOTOPS = ""
+
 # IRCSERVER - The IRC server address that the bots will connect to #
 # IRCPORT - The IRC port for the bot to use, no quotes on this one #
 # IRCCHAN - The IRC channel that the bots will join #
+# IRCBOTOPS - Nicks that will be able to use commands of moderation (seperate nicks by a space)
+# "Karen Chris David"
 IRCSERVER = ""
 IRCPORT =
 IRCCHAN = ""
+IRCBOTOPS = ""

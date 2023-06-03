@@ -26,18 +26,28 @@ The token can be found also in the Discord Developer Portal
 
 - Uses webhooks to spoof IRC nicks as Discord "users"
 - Makes an IRC client for a Discord user upon their request, use !joinirc in the relayed Discord channel.
+- Bot ops for both IRC and Discord that can use moderation/maintainance commands.
+- !kill command to disconnect someone's client
+- Change your client's nick with !ircnick
+- IRC users can mention Discord users just by typing the nick of their client.
 
-More feats that are currently not implemented are:
+Feature ideas:
 
-- a better way to keep and change the bot settings such as, the IRC network/channel or the Discord channel. 
+- an option to make a client for everyone, instead of each user using a command
 - an option to disconnect an IRC client when it doesn't send a msg for X amount of time
-- a list of user id's who will act as bot operators
-- a command for those users to disconnect a Discord user's client (for moderation reasons)
-- a working removal of mIRC colors and the replacement of bolds/italics with * and ** discord equivalents
+
+## Changelog
+June 3rd 2023
+- Added botops list for Discord and IRC
+- Added !kill command
+- Added !ircnick command
+- Added an unexpected disconnection message for the clients, that memtions the user that it belons to
+- Added a 3 attempt reconnect for the main bot in the event of getting disconnected.
+- Fixed a bug where the bot thought a user had a connected client, while it was not conected.
 
 ## Running and setting up details
 Just launch the bot using `python3 main.py`.
 
 ## License
 
-Feel free to fork this repo/copy/borrow stuff for your own projects but provide a link to this as credit!
+Feel free to fork this repo copy/borrow stuff for your own projects but provide a link to this as credit!
