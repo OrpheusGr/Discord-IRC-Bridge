@@ -79,12 +79,15 @@ def get_uptime():
     return result
 
 def stripcolors(m):
-        m = m.replace("\x31", "")
-        m = m.replace("\x0f", "")
-        m = m.replace("\x02", "**")
-        m = m.replace("\x1d", "_")
-        regexc = re.compile("\x03(?:\d{1,2}(?:,\d{1,2})?)?", re.UNICODE)
+        m = m.replace("\\x31", "")
+        m = m.replace("\\x0f", "")
+        m = m.replace("\\x02", "**")
+        m = m.replace("\\x1d", "_")
+        print(m)
+        #regexc = re.compile("\x03(?:\d{1,2}(?:,\d{1,2})?)?", re.UNICODE)
+        regexc = re.compile("\\x03(\d{,2}(,\d{,2})?)?", re.UNICODE)
         m = regexc.sub("", m)
+        print(m)
         if m.count("**") % 2 != 0:
             m = m + "**"
         if m.count("_") % 2 != 0:
