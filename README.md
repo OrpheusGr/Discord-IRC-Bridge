@@ -30,6 +30,7 @@ The token can be found also in the Discord Developer Portal
 - !kill command to disconnect someone's client
 - Change your client's nick with !ircnick
 - IRC users can mention Discord users just by typing the nick of their client.
+- !shutdown to kill the bot
 
 Feature ideas:
 
