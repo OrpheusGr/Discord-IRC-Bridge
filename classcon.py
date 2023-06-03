@@ -79,27 +79,24 @@ def get_uptime():
     return result
 
 def stripcolors(m):
-        bold_italic = 0
-        m = m.replace(r"\x31", "")
-        m = m.replace(r"\x0f", "")
-        m = m.replace(chr(2) + chr(29), "***")
-        m = m.replace(chr(29) + chr(2), "***")
-        m = m.replace(chr(2), "**")
-        m = m.replace(chr(29), "_")
-        print(m)
-        #regexc = re.compile("\x03(?:\d{1,2}(?:,\d{1,2})?)?", re.UNICODE)
-        regexc = re.compile(chr(3) + "(\d{,2}(,\d{,2})?)?", re.UNICODE)
-        m = regexc.sub("", m)
-        print(m)
-        if m.count("***") % 2 != 0:
-            m = m + "***"
-            bold_italic = 1
-        if m.count("**") % 2 != 0:
-            if bold_italic == 0:
-                m = m + "**"
-        if m.count("_") % 2 != 0:
-            m = m + "_"
-        return m
+    bold_italic = 0
+    m = m.replace(r"\x31", "")
+    m = m.replace(r"\x0f", "")
+    m = m.replace(chr(2) + chr(29), "***")
+    m = m.replace(chr(29) + chr(2), "***")
+    m = m.replace(chr(2), "**")
+    m = m.replace(chr(29), "_")
+    regexc = re.compile(chr(3) + "(\d{,2}(,\d{,2})?)?", re.UNICODE)
+    m = regexc.sub("", m)
+    if m.count("***") % 2 != 0:
+        m = m + "***"
+        bold_italic = 1
+    if m.count("**") % 2 != 0:
+        if bold_italic == 0:
+            m = m + "**"
+    if m.count("_") % 2 != 0:
+        m = m + "_"
+    return m
 
 def on_connectbot(connection, event):
     global botdict
