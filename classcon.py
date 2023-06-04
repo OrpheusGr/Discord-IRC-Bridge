@@ -85,6 +85,7 @@ def stripcolors(m):
     m = m.replace(chr(2) + chr(29), "***")
     m = m.replace(chr(29) + chr(2), "***")
     m = m.replace(chr(2), "**")
+    m = m.replace("_", "pholderunderdash95130")
     m = m.replace(chr(29), "_")
     regexc = re.compile(chr(3) + "(\d{,2}(,\d{,2})?)?", re.UNICODE)
     m = regexc.sub("", m)
@@ -96,6 +97,7 @@ def stripcolors(m):
             m = m + "**"
     if m.count("_") % 2 != 0:
         m = m + "_"
+    m = m.replace("pholderunderdash95130", "_")
     return m
 
 def on_connectbot(connection, event):
