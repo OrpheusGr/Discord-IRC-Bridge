@@ -18,9 +18,7 @@ Add a new application and bot user to your Discord account, (on the Discord Deve
 https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permissions=3072  
 (change CLIENT_ID to your application's client_id)
 
-Fill in the info in your settings.py (Don't remove any quotes!)
-
-The token can be found also in the Discord Developer Portal
+The token can also be found in the Discord Developer Portal
 
 ## Features
 
