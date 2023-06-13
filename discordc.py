@@ -6,13 +6,27 @@ import time
 from asyncio import coroutines
 import concurrent.futures
 from asyncio import futures
-from settings import *
+import settings
+import sys
+import random
 global botlist
 botlist = []
 global condict
 condict = {}
 channel = ""
 killed = {}
+
+# Load the config
+def load_the_config():
+    config = settings.load_config()
+    if config == False:
+        sys.exit(0)
+    else:
+        print(config)
+        for item in config:
+            globals()[item] = config[item]
+
+load_the_config()
 
 # Create bot
 intents = discord.Intents.all()
@@ -89,7 +103,8 @@ def send_my_message(message):
     asyncio.run_coroutine_threadsafe(send_my_message_async(message), client.loop)
 
 def shutdown():
-    setattr(classcon.mom, "sent_quit_mom", 1)
+    classcon.momobj.sent_quit_on()
+    time.sleep(2)
     asyncio.run_coroutine_threadsafe(shutdown_async(), client.loop)
 
 async def send_my_message_async(message):
@@ -135,13 +150,16 @@ async def on_message(message):
             content = urls
         else:
             content = content + urls
+    if content == "":
+        print("Stickers are not seen by discord.py")
+        return
     content = ref + content
     contentsplit = content.split()
     cmd = contentsplit[0].lower()
     # botops commands block
     if authorid in DISCORDBOTOPS:
 
-        #kill command - Kills a  user's client by force (used for moderation)
+        #kill command - Kills (sends a quit message) a user's client by force (used for moderation)
         if cmd == "!kill":
             if len(contentsplit) == 1:
                 send_my_message("Usage: !kill useridhere")
@@ -159,15 +177,16 @@ async def on_message(message):
             killed[killid] = round(time.time(), 0)
             tobekilled = condict[killid].conn
             setattr(tobekilled, "sent_quit", 1)
+            classcon.tobekilled.sent_quit = 1
             tobekilled.quit("Client killed by " + message.author.name + reason)
 
         #shutdown command -  Quits IRC, kills Discord bot, stops process.
         if cmd == "!shutdown":
             uptime = classcon.get_uptime()
             send_my_message("**Shutdown request by " + message.author.name + ". I was alive for " + uptime + "**")
-            classcon.mom.quit("It was " + message.author.name +  " from Discord, they pressed the red button! Agh! *dead* I was alive for" + uptime)
-            time.sleep(2)
             shutdown()
+            classcon.mom.quit("It was " + message.author.name +  " from Discord, they pressed the red button! Agh! *dead* I was alive for" + uptime)
+            #time.sleep(2)
             classcon.stoploop()
 
     #public commands block
@@ -177,29 +196,38 @@ async def on_message(message):
         senduptime()
 
     #joinirc comand - Creates a client if the user doesn't already have one and their username/desired nick is acceptable.
-    if cmd == "!joinirc":
-        if classcon.mom.is_connected() == False:
+    if cmd == "!joinirc" or AUTOCLIENTS == True:
+        if AUTOCLIENTS == True and cmd == "!joinirc":
+            print("!joinirc is disabled since AUTOCLIENTS is set to True")
+            return
+        if classcon.mom.is_connected() == False and cmd == "!joinirc" and AUTOCLIENTS == False:
             send_my_message("Central bot is currently disconnected from IRC, please wait and try again.")
             return
 
         if authorid in condict:
-            send_my_message("**Error**: You already have a client connected to IRC, your messages are being relayed!")
+            if AUTOCLIENTS == False and cmd == "!joinirc":
+                send_my_message("**Error**: You already have a client connected to IRC, your messages are being relayed!")
+            condict[authorid].sendmsg(ircdressup(content))
             return
 
         if authorid in killed:
             ctime = round(time.time(), 0)
             timediff = ctime - killed[authorid]
-            if timediff < 60:
+            if timediff < TIMEKILLED:
                 return
+            else:
+                killed.pop(authorid)
 
-        if len(contentsplit) > 1:
+        if len(contentsplit) > 1 and cmd == "!joinirc" and AUTOCLIENTS == False:
             checknick = fixnick(contentsplit[1])
         else:
             checknick = fixnick(message.author.name)
 
         if checknick == False:
-            send_my_message("**Error**: Your IRC nick can only contain A-Z a-z 0-9, your current username or requested nick cannot be used!")
-            return
+            if cmd == "!joinirc" and AUTOCLIENTS == False:
+                send_my_message("**Error**: Your IRC nick can only contain A-Z a-z 0-9, your current username or requested nick cannot be used!")
+                return
+            checknick = "DiscordUser_" + random.randomint(100,999)
         if checknick + "[R]" in classcon.botdict or checknick + "_[R]" in classcon.botdict or checknick in classcon.botdict:
             send_my_message("**Error**: Another Discord User is using this nick, please provide another to avoid confusion with simular nicks.")
             return
@@ -213,6 +241,9 @@ async def on_message(message):
 
     #ircnick commmand - If the user has a client, changes its nick to the provided one. (if the nick isn't used)
     if cmd == "!ircnick":
+        if AUTOCLIENTS == True:
+            print("!ircnick is disabled since AUTOCLIENTS is set to True")
+            return
         if authorid not in condict:
             send_my_message("You don't have a client connected. Did you mean: !joinirc")
             return

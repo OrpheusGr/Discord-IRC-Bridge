@@ -2,7 +2,7 @@ from discord_webhook import DiscordWebhook
 import irc.client
 import time
 import re
-from settings import *
+import settings
 reactor = irc.client.Reactor()
 irc.client.ServerConnection.buffer_class.encoding = "UTF-8"
 irc.client.ServerConnection.buffer_class.errors = "replace"
@@ -11,6 +11,17 @@ botdict = {}
 network = ""
 disconnectretries = 0
 quitf = {}
+
+# Load the config
+def load_the_config():
+    config = settings.load_config()
+    if config == False:
+        sys.exit(0)
+    else:
+        for item in config:
+            globals()[item] = config[item]
+
+load_the_config()
 
 def set_chan(chan, wh):
     global channel
@@ -104,6 +115,8 @@ def on_connectbot(connection, event):
     global botdict
     global mom
     global channel
+    global disconnectretries
+    disconnectretries = 0
     if connection != mom:
         botdict[connection.get_nickname()] = connection.discordid
         print(botdict)
@@ -245,7 +258,8 @@ def on_nick(connection, event):
 
 def on_disconnect(connection, event):
     if connection == mom:
-        if connection.sent_quit_mom == 1:
+        if momobj.sent_quit == 1:
+             momobj.sent_quit = 0
              return
         global disconnectretries
         disconnectretries += 1
@@ -254,6 +268,7 @@ def on_disconnect(connection, event):
              time.sleep(1)
              discord.shutdown()
              stoploop()
+             return
         connection.reconnect()
         return
     if connection.sent_quit != 1:
@@ -270,16 +285,17 @@ class IRCbots():
         self.port = prt
         self.chan = ch
         self.conn = reactor.server()
+        self.lastmsg = round(time.time())
+        self.sent_quit = 0
         if discordid:
             self.conn.discordid = discordid
         else:
             self.conn.discordid = "Relay Mother Bot"
         if mom == True:
             self.mother = self.conn
-            setattr(self.conn, "sent_quit_mom", 0)
         else:
             self.mother = None
-            setattr(self.conn, "sent_quit", 0)
+            self.conn.sent_quit = 0
         if wh:
             self.webhook = wh
         else:
@@ -299,8 +315,21 @@ class IRCbots():
             c.add_global_handler("featurelist", on_featurelist)
             c.add_global_handler("nick", on_nick)
             c.add_global_handler("disconnect", on_disconnect)
+            c.add_global_handler("ping", self.on_ping)
+
+    def on_ping(self, connection, event):
+        if connection == mom:
+            return
+        timediff = round(time.time(),0) - self.lastmsg
+        if timediff >= INACTIVITY:
+            setattr(connection, "sent_quit", 1)
+            connection.quit("Client killed for inactivity")
+
+    def sent_quit_on(self):
+        self.sent_quit = 1
 
     def sendmsg(self, msg):
         if self.conn.is_connected() == False:
             return
         self.conn.privmsg(channel, msg)
+        self.lastmsg = round(time.time(),0)
