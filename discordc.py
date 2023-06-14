@@ -216,7 +216,7 @@ async def on_message(message):
         if authorid in killed:
             ctime = round(time.time(), 0)
             timediff = ctime - killed[authorid]
-            if timediff < TIMEKILLED:
+            if timediff < int(TIMEKILLED):
                 return
             else:
                 killed.pop(authorid)

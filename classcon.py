@@ -342,7 +342,7 @@ class IRCbots():
     def on_ping(self, connection, event):
         if connection == mom:
             return
-        if INACTIVITY > 0:
+        if int(INACTIVITY) > 0:
             timediff = round(time.time(),0) - self.lastmsg
             if timediff >= INACTIVITY:
                 setattr(connection, "sent_quit", 1)
