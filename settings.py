@@ -4,6 +4,9 @@ import pickle
 if os.path.isfile("config.pkl") == False:
     open("config.pkl", 'w').close()
 
+if os.path.isfile("savedclients.pkl") == False:
+    open("savedclients.pkl", 'w').close()
+
 def load_config():
     global config
     config = {}
@@ -15,3 +18,15 @@ def load_config():
         return False
     else:
         return config
+
+def load_saved_clients():
+    global savedclients
+    savedclients = {}
+    if os.path.getsize('savedclients.pkl') > 0:
+        with open('savedclients.pkl', 'rb') as fp:
+           savedclients = pickle.load(fp)
+    return savedclients
+
+def saveclients(clients):
+    with open('savedclients.pkl', 'wb') as fp:
+        pickle.dump(clients, fp)

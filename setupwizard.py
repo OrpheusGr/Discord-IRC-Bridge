@@ -163,13 +163,15 @@ if x:
     print(bcolors.OKGREEN + "Kill time is set to:", TIMEKILLED, bcolors.OFF)
     time.sleep(2)
     print("____________________________")
-    print(bcolors.OKCYAN + "After how many seconds of inactivity should IRC clients be discconnected?", bcolors.OFF)
+    print(bcolors.OKCYAN + "After how many seconds of inactivity should IRC clients be discconnected? Set to 0 or leave empty to not keep this disabled.", bcolors.OFF)
     INACTIVITY = input()
     while INACTIVITY.isnumeric() == False and INACTIVITY != "":
         print(bcolors.WARNING + "This should also be a numerical value. Just numbers!", bcolors.OFF)
         INACTIVITY = input()
+    if INACTIVITY == "":
+        INACTIVITY = "0"
     config["INACTIVITY"] = int(INACTIVITY)
-    print(bcolors.OKGREEN + "Inactivity disconnection is set to: " + INACTIVITY + " seconds.")
+    print(bcolors.OKGREEN + "Inactivity disconnection is set to: " + str(INACTIVITY) + " seconds.")
     time.sleep(2)
     print("____________________________")
     print("Should clients be created with a command by each user or automatically when a user sends a message? (y/n)")

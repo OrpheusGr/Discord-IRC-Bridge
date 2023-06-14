@@ -112,7 +112,11 @@ async def send_my_message_async(message):
     await channel.send(message.strip())
 
 async def setstatus_async(a):
-    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Do !joinirc to connect to IRC!"))
+    if AUTOCLIENTS != True:
+        status = "!joinirc to connect to IRC"
+    else:
+        status = "Discord & IRC"
+    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=status))
 
 async def shutdown_async():
     await client.close()
@@ -177,7 +181,6 @@ async def on_message(message):
             killed[killid] = round(time.time(), 0)
             tobekilled = condict[killid].conn
             setattr(tobekilled, "sent_quit", 1)
-            classcon.tobekilled.sent_quit = 1
             tobekilled.quit("Client killed by " + message.author.name + reason)
 
         #shutdown command -  Quits IRC, kills Discord bot, stops process.
@@ -196,10 +199,10 @@ async def on_message(message):
         senduptime()
 
     #joinirc comand - Creates a client if the user doesn't already have one and their username/desired nick is acceptable.
-    if cmd == "!joinirc" or AUTOCLIENTS == True:
+    if cmd == "!joinirc" or (AUTOCLIENTS == True and cmd != "!joinirc"):
         if AUTOCLIENTS == True and cmd == "!joinirc":
             print("!joinirc is disabled since AUTOCLIENTS is set to True")
-            return
+            #return
         if classcon.mom.is_connected() == False and cmd == "!joinirc" and AUTOCLIENTS == False:
             send_my_message("Central bot is currently disconnected from IRC, please wait and try again.")
             return
@@ -260,6 +263,7 @@ async def on_message(message):
             send_my_message("Another Discord User is using a simular/the same nick, please choose another ome to avoid confusion")
             return
         ucon.nick(urequest + "[R]")
+        return
 
     #public commands close block
     if authorid in condict:

@@ -1,5 +1,6 @@
 # June 14th 2023
 - Added a setup wizard that makes or edits a config
+- The clients that are made will be saved and reconnected when the bot is restarted
 - The settings are now saved in a .pkl file and are not edited by hand
 - Added !rehash command to reload the config if you make any changes
 - Added 2 distinct modes of client creation. a) use of !joinirc command or b) automated client creation when a user sends a message.

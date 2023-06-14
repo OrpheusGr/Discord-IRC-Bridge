@@ -11,15 +11,19 @@ botdict = {}
 network = ""
 disconnectretries = 0
 quitf = {}
+savedclients = {}
 
 # Load the config
 def load_the_config():
+    global savedclients
     config = settings.load_config()
+    savedclients = settings.load_saved_clients()
     if config == False:
         sys.exit(0)
     else:
         for item in config:
             globals()[item] = config[item]
+
 
 load_the_config()
 
@@ -191,7 +195,18 @@ def on_join(connection, event):
         time.sleep(5)
         with thread_lock:
              print("[IRC] Joined", channel)
-        discord.send_my_message("**Relay is up, do !joinirc to get a client**")
+        if AUTOCLIENTS != True:
+            joinmsg = "**Relay is up, do !joinirc to get a client!**"
+        else:
+            joinmsg = "**Relay is up!**"
+        discord.send_my_message(joinmsg)
+        if savedclients != {}:
+            for client in savedclients:
+                time.sleep(3)
+                newclient = IRCbots(savedclients[client], IRCSERVER, IRCPORT, IRCCHAN, None, False, client)
+                newclientcon = newclient.conn
+                discord.condict[client] = newclient
+                newclient.connect()
 
 def on_part(connection, event):
     if event.target != channel:
@@ -272,9 +287,14 @@ def on_disconnect(connection, event):
         connection.reconnect()
         return
     if connection.sent_quit != 1:
-        discord.send_my_message("<@" + connection.discordid + ">" + " Disconnected from " + event.source + " " + event.arguments[0])
-    discord.condict.pop(connection.discordid)
-    botdict.pop(connection.get_nickname())
+        discord.send_my_message("<@" + connection.discordid + ">" + " Unexpectedly disconnected from " + event.source + " " + event.arguments[0])
+    obj = discord.condict[connection.discordid]
+    del obj
+    if connection.discordid in discord.condict:
+        discord.condict.pop(connection.discordid)
+    cn = connection.get_nickname()
+    if cn in botdict:
+        botdict.pop(connection.get_nickname())
     print(botdict)
     print(discord.condict)
 
@@ -285,7 +305,7 @@ class IRCbots():
         self.port = prt
         self.chan = ch
         self.conn = reactor.server()
-        self.lastmsg = round(time.time())
+        self.lastmsg = round(time.time(),0)
         self.sent_quit = 0
         if discordid:
             self.conn.discordid = discordid
@@ -296,6 +316,8 @@ class IRCbots():
         else:
             self.mother = None
             self.conn.sent_quit = 0
+            savedclients[discordid] = self.nick
+            settings.saveclients(savedclients)
         if wh:
             self.webhook = wh
         else:
@@ -320,10 +342,11 @@ class IRCbots():
     def on_ping(self, connection, event):
         if connection == mom:
             return
-        timediff = round(time.time(),0) - self.lastmsg
-        if timediff >= INACTIVITY:
-            setattr(connection, "sent_quit", 1)
-            connection.quit("Client killed for inactivity")
+        if INACTIVITY > 0:
+            timediff = round(time.time(),0) - self.lastmsg
+            if timediff >= INACTIVITY:
+                setattr(connection, "sent_quit", 1)
+                connection.quit("Client killed for inactivity")
 
     def sent_quit_on(self):
         self.sent_quit = 1
