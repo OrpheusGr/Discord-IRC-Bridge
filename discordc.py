@@ -221,8 +221,11 @@ async def on_message(message):
             else:
                 killed.pop(authorid)
 
-        if len(contentsplit) > 1 and cmd == "!joinirc" and AUTOCLIENTS == False:
-            checknick = fixnick(contentsplit[1])
+        if AUTOCLIENTS != True:
+            if len(contentsplit) > 1:
+                checknick = fixnick(contentsplit[1])
+            else:
+                checknick = fixnick(message.author.name)
         else:
             checknick = fixnick(message.author.name)
 
