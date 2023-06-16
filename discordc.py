@@ -64,16 +64,16 @@ def senduptime():
 def ircdressup(m):
     msplit = m.split()
     for i in range(len(msplit)):
-        mi = msplit[i]
-        if "<https://" == mi[0:9] or "<http://" == mi[0:8] or "https://" == mi[0:8] or "http://" == mi[0:7]:
-            msplit[i] = mi.replace("_", "pholderurlunderdash13095")
+        if msplit[i].startswith("http") or msplit[i].startswith("<http"):
+            msplit[i] = msplit[i].replace("_", "underdashreplacementplaceholderdiscordbotregexsucks")
     m = " ".join(msplit)
-    m = m.replace("_", chr(29))
     m = m.replace("***", chr(29) + "\x02")
     m = m.replace("**", "\x02")
     m = m.replace("*", chr(29))
     m = m.replace("```", "")
-    m = m.replace("pholderurlunderdash13095", "_")
+    m = m.replace("_", chr(29))
+    m = m.replace("underdashreplacementplaceholderdiscordbotregexsucks", "_")
+    #print(repr(m))
     return m
 
 def get_reference(r, p, a):
@@ -216,7 +216,7 @@ async def on_message(message):
         if authorid in killed:
             ctime = round(time.time(), 0)
             timediff = ctime - killed[authorid]
-            if timediff < int(TIMEKILLED):
+            if timediff < TIMEKILLED:
                 return
             else:
                 killed.pop(authorid)
@@ -266,6 +266,9 @@ async def on_message(message):
             send_my_message("Another Discord User is using a simular/the same nick, please choose another ome to avoid confusion")
             return
         ucon.nick(urequest + "[R]")
+        classcon.savedclients.pop(authorid)
+        classcon.savedclients[authorid] = urequest + "[R]"
+        settings.saveclients(classcon.savedclients)
         return
 
     #public commands close block

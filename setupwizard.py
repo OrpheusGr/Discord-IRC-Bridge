@@ -10,6 +10,29 @@ def fixnick(nick):
     else:
         return new_nick
 
+def totype(of, to):
+    if type(of) == int:
+        try:
+           r = int(to)
+        except:
+           r = ["non_same_type", "numeric"]
+    elif type(of) == str:
+        try:
+           if of.isnumeric() == True and to.isnumeric() == False:
+               r = ["non_same_type", "numeric"]
+           else:
+               r = str(to)
+        except:
+           r = ["nom_same_type", "string"]
+    elif type(of) == bool:
+        if to == "False":
+           r = False
+        elif to == "True":
+           r = "True"
+        else:
+           r = ""
+    return r
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -212,9 +235,17 @@ else:
             if x:
                 print("Please input the new value, if you didn't want to edit it, just press Enter")
                 x = input()
+                y = totype(value, x)
+                while type(y) == list and y[0] == "non_same_type":
+                        print("This is not an acceptable value for this setting. It should be", y[1])
+                        print(item, "=", value)
+                        y = totype(value, input())
+                x = y
                 if x != "":
                     config[item] = x
                     print(item, "=", config[item])
             time.sleep(2)
             print("_____________________________________")
         save_config()
+        time.sleep(1)
+        print(config)

@@ -95,13 +95,19 @@ def get_uptime():
 
 def stripcolors(m):
     bold_italic = 0
+    msplit = m.split()
+    for i in range(len(msplit)):
+        mi = msplit[i]
+        if mi.startswith("http") or mi.startswith("<http"):
+            msplit[i] = mi.replace("_", "pholderunderdash95130")
+    m = " ".join(msplit)
     m = m.replace(r"\x31", "")
     m = m.replace(r"\x0f", "")
     m = m.replace(chr(2) + chr(29), "***")
     m = m.replace(chr(29) + chr(2), "***")
     m = m.replace(chr(2), "**")
-    m = m.replace("_", "pholderunderdash95130")
     m = m.replace(chr(29), "_")
+    m = m.replace("pholderunderdash95130", "_")
     regexc = re.compile(chr(3) + "(\d{,2}(,\d{,2})?)?", re.UNICODE)
     m = regexc.sub("", m)
     if m.count("***") % 2 != 0:
@@ -112,7 +118,6 @@ def stripcolors(m):
             m = m + "**"
     if m.count("_") % 2 != 0:
         m = m + "_"
-    m = m.replace("pholderunderdash95130", "_")
     return m
 
 def on_connectbot(connection, event):
@@ -168,7 +173,7 @@ def on_pubmsg(connection, event):
         finalmsg = "*" + finalmsg + "*"
     with thread_lock:
         print("[IRC]", sender, ":", finalmsg)
-    webhook = DiscordWebhook(url=webhooklink, content=finalmsg, username=sender + "_[IRC]")
+    webhook = DiscordWebhook(url=webhooklink, content=finalmsg, username=sender + " [IRC]")
     response = webhook.execute()
     #IRC bot ops commands block
     if sender in IRCBOTOPS:
@@ -324,6 +329,7 @@ class IRCbots():
             self.webhook = None
 
     def connect(self):
+        self.conn.set_keepalive(60)
         c = self.conn.connect(self.server, self.port, self.nick, None, "Discord", self.conn.discordid)
         if self.mother:
             c.add_global_handler("pubmsg", on_pubmsg)
@@ -342,7 +348,7 @@ class IRCbots():
     def on_ping(self, connection, event):
         if connection == mom:
             return
-        if int(INACTIVITY) > 0:
+        if INACTIVITY > 0:
             timediff = round(time.time(),0) - self.lastmsg
             if timediff >= INACTIVITY:
                 setattr(connection, "sent_quit", 1)
