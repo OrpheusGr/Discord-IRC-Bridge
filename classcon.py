@@ -146,6 +146,8 @@ def on_pubmsg(connection, event):
     global webhooklink
     global discord
     global thread_lock
+    if len(event.arguments[0].split()) == 0:
+        return
     if event.target != channel:
         return
     if connection != mom:
