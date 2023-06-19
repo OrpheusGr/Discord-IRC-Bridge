@@ -31,7 +31,14 @@ The token can also be found in the Discord Developer Portal
 - !shutdown to kill the bot.
 - Auto Disconnecting of IRC clients after a time limit that you can set.
 
-## Latest update
+## Latest updates
+June 19th 2023
+- Added 4 new commands
+  - !fjoinirc - Makes a client for another user, used only by users in the botop list
+  - !fircnick - Forcefully changes a user's nick, used only by users in the botop list, for moderation use
+  - !usernick - Shows another user's nick, or their saved nick, only used by users in botop list
+  - !myircnick - Shows the user's IRC nick, or their saved one, if there is one, when they don't have a connected client.
+- Found and fixed a couple bugs
 June 14th 2023
 - Added a setup wizard that makes or edits a config
 - The clients that are made will be saved and reconnected when the bot is restarted
@@ -39,7 +46,7 @@ June 14th 2023
 - Added 2 distinct modes of client creation. a) use of !joinirc command or b) automated client creation when a user sends a message.
 - Added a time limit to disconnect clients for inactivity (no messages sent for X amount of time)
 
-For previous updates see changelog.md
+For less recent updates see changelog.md
 
 ## Running and setting up details
 - Before starting the bot you need to `python3 setupwizard.py` to make a config file for the bot.

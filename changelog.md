@@ -1,3 +1,11 @@
+# June 19th 2023
+- Added 4 new commands
+  - !fjoinirc - Makes a client for another user, used only by users in the botop list
+  - !fircnick - Forcefully changes a user's nick, used only by users in the botop list, for moderation use
+  - !usernick - Shows another user's nick, or their saved nick, only used by users in botop list
+  - !myircnick - Shows the user's IRC nick, or their saved one, if there is one, when they don't have a connected client.
+- Found and fixed a couple bugs
+
 # June 14th 2023
 - Added a setup wizard that makes or edits a config
 - The clients that are made will be saved and reconnected when the bot is restarted

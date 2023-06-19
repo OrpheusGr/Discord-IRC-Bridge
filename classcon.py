@@ -95,20 +95,22 @@ def get_uptime():
 
 def stripcolors(m):
     bold_italic = 0
+    m = m.replace("pholderunderdash95130", "_")
+    regexc = re.compile(chr(3) + "(\d{,2}(,\d{,2})?)?", re.UNICODE)
     msplit = m.split()
     for i in range(len(msplit)):
         mi = msplit[i]
         if mi.startswith("http") or mi.startswith("<http"):
             msplit[i] = mi.replace("_", "pholderunderdash95130")
     m = " ".join(msplit)
-    m = m.replace(r"\x31", "")
-    m = m.replace(r"\x0f", "")
+    m = m.replace(chr(49), "")
+    m = m.replace(chr(15), "")
     m = m.replace(chr(2) + chr(29), "***")
     m = m.replace(chr(29) + chr(2), "***")
     m = m.replace(chr(2), "**")
+    if m.count(chr(29)) % 2 != 0:
+        m = m + " " + chr(29)
     m = m.replace(chr(29), "_")
-    m = m.replace("pholderunderdash95130", "_")
-    regexc = re.compile(chr(3) + "(\d{,2}(,\d{,2})?)?", re.UNICODE)
     m = regexc.sub("", m)
     if m.count("***") % 2 != 0:
         m = m + "***"
@@ -116,9 +118,12 @@ def stripcolors(m):
     if m.count("**") % 2 != 0:
         if bold_italic == 0:
             m = m + "**"
-    if m.count("_") % 2 != 0:
-        m = m + "_"
     return m
+
+def find_nick_by_id(uid):
+    for i in botdict:
+        if botdict[i] == uid:
+            return i
 
 def on_connectbot(connection, event):
     global botdict
@@ -159,7 +164,7 @@ def on_pubmsg(connection, event):
     messagenot = stripcolors(event.arguments[0])
     message = messagenot.split()
     cmd = message[0].lower()
-    #public commands blocks
+    #public commands block
     if cmd == "!relayuptime":
         uptime = get_uptime()
         sendtoboth("I've been running for " + uptime)
@@ -182,7 +187,7 @@ def on_pubmsg(connection, event):
         if cmd == "!shutdown":
             uptime = get_uptime()
             discord.send_my_message("**Shutdown request by " +  sender + " on IRC. I was alive for " + uptime + "**")
-            connection.quit("It was " + sender + ", they pressed the red button! Agh! *dead* I was alive for " + uptime)
+            connection.disconnect("It was " + sender + ", they pressed the red button! Agh! *dead* I was alive for " + uptime)
             time.sleep(2)
             discord.shutdown()
             stoploop()
@@ -331,7 +336,6 @@ class IRCbots():
             self.webhook = None
 
     def connect(self):
-        self.conn.set_keepalive(60)
         c = self.conn.connect(self.server, self.port, self.nick, None, "Discord", self.conn.discordid)
         if self.mother:
             c.add_global_handler("pubmsg", on_pubmsg)
@@ -354,7 +358,7 @@ class IRCbots():
             timediff = round(time.time(),0) - self.lastmsg
             if timediff >= INACTIVITY:
                 setattr(connection, "sent_quit", 1)
-                connection.quit("Client killed for inactivity")
+                connection.disconnect("Client killed for inactivity")
 
     def sent_quit_on(self):
         self.sent_quit = 1
