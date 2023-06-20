@@ -25,11 +25,15 @@ The token can also be found in the Discord Developer Portal
 - Uses webhooks to spoof IRC nicks as Discord "users"
 - Makes an IRC client for a Discord user upon their request (use !joinirc in the relayed Discord channel.) Or automatically when they send a Discord message. You can choose between a command or auto connecting when you run the setupwizard.py
 - Bot ops for both IRC and Discord that can use moderation/maintainance commands.
-- !kill command to disconnect someone's client
+- !kill command to disconnect someone's client only for botops)
 - Change your client's nick with !ircnick (if auto connecting is not enabled)
 - IRC users can mention Discord users just by typing the nick of their client.
-- !shutdown to kill the bot.
+- !shutdown to kill the bot. (only for botops)
 - Auto Disconnecting of IRC clients after a time limit that you can set.
+- !fjoinirc make a client for another user(only for botops)
+- !fircnick change a user's IRC nick (only for botops)
+- !usernick shows another user's IRC nick (only for botops)
+- !myircnick shows the sender's IRC nick
 
 ## Latest updates
 June 19th 2023
@@ -38,7 +42,8 @@ June 19th 2023
   - !fircnick - Forcefully changes a user's nick, used only by users in the botop list, for moderation use
   - !usernick - Shows another user's nick, or their saved nick, only used by users in botop list
   - !myircnick - Shows the user's IRC nick, or their saved one, if there is one, when they don't have a connected client.
-- Found and fixed a couple bugs
+- Found and fixed a couple bugs  
+
 June 14th 2023
 - Added a setup wizard that makes or edits a config
 - The clients that are made will be saved and reconnected when the bot is restarted
