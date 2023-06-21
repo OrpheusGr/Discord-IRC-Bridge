@@ -95,6 +95,14 @@ def get_reference(r, p, a):
         rfull = a + " pinned a message <" + rauthor + "> " + rcont
     return rfull
 
+def replace_emojis(content):
+    regexc = re.compile('<:\w*:\d*>', re.UNICODE)
+    findmoji = re.findall(regexc, content)
+    for moji in findmoji:
+        namemoji = ":" + moji.split(":")[1] + ":"
+        content = content.replace(moji, namemoji)
+    return content
+
 def setstatus():
     asyncio.run_coroutine_threadsafe(setstatus_async(1), client.loop)
 
@@ -146,7 +154,7 @@ async def on_message(message):
         ref = get_reference(refinfo, msgrefpin, message.author.name)
 
     authorid = str(message.author.id)
-    content = message.clean_content.replace("\n", " ").strip()
+    content = replace_emojis(message.clean_content.replace("\n", " ").strip())
 
     idarg = ""
     dirty_content = message.content.replace("\n", " ").strip()
