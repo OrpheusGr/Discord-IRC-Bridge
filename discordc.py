@@ -370,8 +370,8 @@ async def on_message(message):
         senduptime()
         return
 
-    elif cmd == "!relayhelp"
-        if len(contentsplit) > 1:
+    elif cmd == "!relayhelp":
+        if len(contentsplit) == 1:
             send_my_message(help["listcommands"])
         else:
             if contentsplit[1] in help:
