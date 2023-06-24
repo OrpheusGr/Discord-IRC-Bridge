@@ -204,11 +204,10 @@ if x:
         print(bcolors.OKGREEN + "Clients will connect automatically when a user sends a message" + bcolors.OFF)
     else:
         config["AUTOCLIENTS"] = False
-        print(bcolors.OKGREEN + "Clients will connect when a user uses the !joinirc command" + bcolors.OFF
+        print(bcolors.OKGREEN + "Clients will connect when a user uses the !joinirc command" + bcolors.OFF)
     time.sleep(2)
     print("____________________________")
-    print(bcolors.OKCYAN + "Should Discord users be allowed to use !nick to change their client's nick on I
-RC? y/n" + bcolors.OFF)
+    print(bcolors.OKCYAN + "Should Discord users be allowed to use !nick to change their client's nick on IRC? y/n" + bcolors.OFF)
     NICKCHANGE = yninput()
     print(bcolors.OKGREEN + "Use of !nick command is set to: " + str(NICKCHANGE) + bcolors.OFF)
     print("____________________________")
