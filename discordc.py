@@ -18,13 +18,15 @@ channel = ""
 killed = {}
 leftirc = {}
 help = helpreplies.help
+shutting_down = 0
+
 # Load the config
 def load_the_config():
     config = settings.load_config()
     if config == False:
         sys.exit(0)
     else:
-        print(config)
+        #print(config)
         for item in config:
             globals()[item] = config[item]
 
@@ -54,7 +56,6 @@ def set_thread_lock(lock):
 
 def fixnick(nick):
     new_nick = re.sub(r'[^A-Za-z0-9 ^\[\]\\{}`_-]+', '', nick)
-    print(new_nick)
     if new_nick == "":
         return False
     else:
@@ -81,6 +82,8 @@ def ircdressup(m):
 def get_reference(r, p, a):
     rid = r.author.id
     rauthor = r.author.name
+    if str(r.webhook_id) == whid:
+        rauthor = rauthor[0:len(rauthor)-6]
     rurl = ""
     if len(r.attachments) > 0:
         rurl = get_urls(r.attachments)
@@ -92,9 +95,9 @@ def get_reference(r, p, a):
     if rcont == "":
         rcont = rurl
     if p == False:
-        rfull = "<" + rauthor + "> " + rcont + " <<< "
+        rfull = "\"<" + rauthor + "> " + rcont + "\" <<< "
     else:
-        rfull = a + " pinned a message <" + rauthor + "> " + rcont
+        rfull = a + " pinned a message: \"<" + rauthor + ">\" " + rcont
     return rfull
 
 def replace_emojis(content):
@@ -112,10 +115,30 @@ def send_my_message(message):
     global client
     asyncio.run_coroutine_threadsafe(send_my_message_async(message), client.loop)
 
-def shutdown():
+def shutdown(msgornot=0, author=" ", irc="on Discord"):
+    global shutting_down
+    shutting_down = 1
+    uptime = classcon.get_uptime()
+    if msgornot == 0:
+        send_my_message("**Shutdown request by " + author + ". I was alive for " + uptime + "**")
+    sleeptime = (len(condict) * 2) + 5
+    quitall("Relay shutting down")
+    time.sleep(sleeptime)
     classcon.momobj.sent_quit_on()
-    time.sleep(2)
+    classcon.mom.disconnect("It was " + author +  irc + ", they pressed the red button! Agh! *dead* I was alive for" + uptime)
+    die()
+
+def die():
     asyncio.run_coroutine_threadsafe(shutdown_async(), client.loop)
+    classcon.stoploop()
+
+def quitall(reason):
+    copycondict = list(condict.keys())
+    for item in copycondict:
+        con = condict[item].conn
+        setattr(con, "sent_quit", 1)
+        con.disconnect(reason)
+        time.sleep(2)
 
 async def send_my_message_async(message):
     global channel
@@ -136,6 +159,7 @@ async def on_message(message):
     global thread_lock
     global condict
     global channel
+    global leftirc
     checknick = False
     ref = ""
     msgrefpin = False
@@ -145,6 +169,8 @@ async def on_message(message):
     if message.author == client.user:
         return
     if message.channel != channel:
+        return
+    if shutting_down == 1:
         return
 
     if message.type == discord.MessageType.pins_add:
@@ -180,6 +206,26 @@ async def on_message(message):
     content = ref + content
     contentsplit = content.split()
     cmd = contentsplit[0].lower()
+    if AUTOCLIENTS == True and authorid not in leftirc:
+        if authorid not in condict:
+            if authorid in killed:
+                ctime = round(time.time(), 0)
+                timediff = ctime - killed[authorid]
+                if timediff < TIMEKILLED or TIMEKILLED == 0:
+                   return
+            if authorid in classcon.savedclients:
+                checknick = fixnick(classcon.savedclients[authorid])
+            else:
+                checknick = fixnick(messge.author.name)
+            while checnick == False:
+                if message.author.nick:
+                    checknick = fixnick(message.author.nick)
+                else:
+                    checknick = "DiscordUser_" + str(random.randomint(100,9999))
+            newclient = classcon.IRCbots(checknick + "[R]", IRCSERVER, IRCPORT, IRCCHAN, None, False, authorid)
+            newclientcon = newclient.conn
+            condict[authorid] = newclient
+            newclient.connect()
     # botops commands block
     if authorid in DISCORDBOTOPS:
 
@@ -208,12 +254,7 @@ async def on_message(message):
 
         #shutdown command -  Quits IRC, kills Discord bot, stops process.
         elif cmd == "!shutdown":
-            uptime = classcon.get_uptime()
-            send_my_message("**Shutdown request by " + message.author.name + ". I was alive for " + uptime + "**")
-            shutdown()
-            classcon.mom.disconnect("It was " + message.author.name +  " from Discord, they pressed the red button! Agh! *dead* I was alive for" + uptime)
-            time.sleep(2)
-            classcon.stoploop()
+            shutdown(0, message.author.name)
             return
 
         #fjoinirc command - Makes a client for another user
@@ -246,6 +287,7 @@ async def on_message(message):
             else:
                  if idarg in classcon.savedclients:
                      checknick = classcon.savedclients[idarg]
+                     checknick = checknick[0:len(checknick)-3]
                  else:
                      checknick = fixnick(idarg_name)
             if checknick == False:
@@ -256,6 +298,8 @@ async def on_message(message):
             newclientcon = newclient.conn
             condict[idarg] = newclient
             newclient.connect()
+            if authorid in leftirc:
+                leftirc.pop(authorid)
             return
 
         #fnick command - Forcefully changes a Discord user's IRC nick (used for moderation)
@@ -303,45 +347,35 @@ async def on_message(message):
     #public commands block
 
     #joinirc command - Creates a client if the user doesn't already have one and their username/desired nick is acceptable.
-    if cmd == "!joinirc" or AUTOCLIENTS == True:
+    if (cmd == "!joinirc" and AUTOCLIENTS == False) or (cmd == "!joinirc" and AUTOCLIENTS == True and authorid in leftirc):
         usenick = message.author.name
         if "--nick" in contentsplit:
             contentsplit.remove("--nick")
             if message.author.nick:
                 usenick = message.author.nick
-        if classcon.mom.is_connected() == False and cmd == "!joinirc" and AUTOCLIENTS == False:
+        if classcon.mom.is_connected() == False:
             send_my_message("Central bot is currently disconnected from IRC, please wait and try again.")
             return
 
         if authorid in condict:
-            if AUTOCLIENTS == False and cmd == "!joinirc":
-                send_my_message("**Error**: You already have a client connected to IRC, your messages are being relayed!")
-            condict[authorid].sendmsg(ircdressup(content))
+            send_my_message("**Error**: You already have a client connected to IRC, your messages are being relayed!")
             return
 
         if authorid in killed:
             ctime = round(time.time(), 0)
             timediff = ctime - killed[authorid]
             if timediff < TIMEKILLED or TIMEKILLED == 0:
-                if cmd == "!joinirc" and AUTOCLIENTS == False:
-                    if TIMEKILLED == 0:
-                        killtimeleft = "Permanent"
-                    else:
-                        killtimeleft = TIMEKILLED - timediff
-                    send_my_message("Your client has been killed by a botop (" + str(killtimeleft) + " secs left)")
+                if TIMEKILLED == 0:
+                    killtimeleft = "Permanent"
+                else:
+                    killtimeleft = TIMEKILLED - timediff
+                send_my_message("Your client has been killed by a botop (" + str(killtimeleft) + " secs left)")
                 return
             else:
                 killed.pop(authorid)
 
-        if AUTOCLIENTS != True:
-            if len(contentsplit) > 1:
-                checknick = fixnick(contentsplit[1])
-            else:
-                if authorid in classcon.savedclients:
-                    checknick = classcon.savedclients[authorid]
-                    checknick = checknick[0:len(checknick)-3]
-                else:
-                    checknick = fixnick(usenick)
+        if len(contentsplit) > 1:
+            checknick = fixnick(contentsplit[1])
         else:
             if authorid in classcon.savedclients:
                 checknick = classcon.savedclients[authorid]
@@ -350,10 +384,8 @@ async def on_message(message):
                 checknick = fixnick(usenick)
 
         if checknick == False:
-            if cmd == "!joinirc" and AUTOCLIENTS == False:
-                send_my_message("**Error**: Your IRC nick can only contain A-Z a-z 0-9, your current username or requested nick cannot be used!")
-                return
-            checknick = "DiscordUser_" + random.randomint(100,999)
+            send_my_message("**Error**: Your IRC nick can only contain A-Z a-z 0-9, your current username or requested nick cannot be used!")
+            return
         if checknick + "[R]" in classcon.botdict or checknick + "_[R]" in classcon.botdict or checknick in classcon.botdict:
             send_my_message("**Error**: Another Discord User is using this nick, please provide another to avoid confusion with simular nicks.")
             return
@@ -363,6 +395,8 @@ async def on_message(message):
             newclientcon = newclient.conn
             condict[authorid] = newclient
             newclient.connect()
+            if authorid in leftirc:
+                leftirc.pop(authorid)
             return
 
     #relayuptime commmand - Simply sends the bot's uptime to Discord and IRC.
@@ -379,6 +413,7 @@ async def on_message(message):
             else:
                 send_my_message("Invalid parameter. Use '!relayhelp listcommands' to see a list of commands you can get help for.")
         return
+
     #leaveirc command - Disconnects the user's client from IRC, to get it back they must user !joinirc (wether AUTOCLIENTS is on or off)
     elif cmd == "!leaveirc":
         if authorid not in condict:
@@ -394,12 +429,12 @@ async def on_message(message):
         ucon = condict[authorid].conn
         setattr(ucon, 'sent_quit', 1)
         ucon.disconnect("Client removed by user. " + reason)
-        leftirc[ucon] = 1
+        leftirc[authorid] = 1
+        return
 
     #nick command - If the user has a client, changes its nick to the provided one. (if the nick isn't used)
     elif cmd == "!nick":
-        if AUTOCLIENTS == True:
-            print("!nick is disabled since AUTOCLIENTS is set to True")
+        if NICKCHANGE == False:
             return
         if authorid not in condict:
             send_my_message("You don't have a client connected. Did you mean: !joinirc")

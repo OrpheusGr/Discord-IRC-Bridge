@@ -186,7 +186,7 @@ if x:
     print(bcolors.OKGREEN + "Kill time is set to:", TIMEKILLED, bcolors.OFF)
     time.sleep(2)
     print("____________________________")
-    print(bcolors.OKCYAN + "After how many seconds of inactivity should IRC clients be discconnected? Set to 0 or leave empty to not keep this disabled.", bcolors.OFF)
+    print(bcolors.OKCYAN + "After how many seconds of inactivity should IRC clients be discconnected? Set to 0 or leave empty to keep this disabled.", bcolors.OFF)
     INACTIVITY = input()
     while INACTIVITY.isnumeric() == False and INACTIVITY != "":
         print(bcolors.WARNING + "This should also be a numerical value. Just numbers!", bcolors.OFF)
@@ -204,9 +204,15 @@ if x:
         print(bcolors.OKGREEN + "Clients will connect automatically when a user sends a message" + bcolors.OFF)
     else:
         config["AUTOCLIENTS"] = False
-        print(bcolors.OKGREEN + "Clients will connect when a user uses the !joinirc command" + bcolors.OFF)
+        print(bcolors.OKGREEN + "Clients will connect when a user uses the !joinirc command" + bcolors.OFF
     time.sleep(2)
     print("____________________________")
+    print(bcolors.OKCYAN + "Should Discord users be allowed to use !nick to change their client's nick on I
+RC? y/n" + bcolors.OFF)
+    NICKCHANGE = yninput()
+    print(bcolors.OKGREEN + "Use of !nick command is set to: " + str(NICKCHANGE) + bcolors.OFF)
+    print("____________________________")
+    time.sleep(1)
     print(bcolors.OKCYAN + "Lastly, we need the URL of the webhook that the bot will use to post messages from IRC")
     print("e.g https://discord.com/api/webhooks/.../.../...")
     print("You can create a Webhook in your Server's settings. Make sure to make it work in the same channel you input earlier. i.e the channel where the Relaying should happen in.", bcolors.OFF)

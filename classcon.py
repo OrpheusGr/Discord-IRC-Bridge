@@ -95,7 +95,7 @@ def get_uptime():
 
 def stripcolors(m):
     bold_italic = 0
-    m = m.replace("pholderunderdash95130", "_")
+    #m = m.replace("pholderunderdash95130", "_")
     regexc = re.compile(chr(3) + "(\d{,2}(,\d{,2})?)?", re.UNICODE)
     msplit = m.split()
     for i in range(len(msplit)):
@@ -118,6 +118,7 @@ def stripcolors(m):
     if m.count("**") % 2 != 0:
         if bold_italic == 0:
             m = m + "**"
+    m = m.replace("pholderunderdash95130", "_")
     return m
 
 def find_nick_by_id(uid):
@@ -133,7 +134,7 @@ def on_connectbot(connection, event):
     disconnectretries = 0
     if connection != mom:
         botdict[connection.get_nickname()] = connection.discordid
-        print(botdict)
+        #print(botdict)
     elif connection == mom:
         print("Successful connection to", event.source)
         time.sleep(2)
@@ -187,9 +188,8 @@ def on_pubmsg(connection, event):
         if cmd == "!shutdown":
             uptime = get_uptime()
             discord.send_my_message("**Shutdown request by " +  sender + " on IRC. I was alive for " + uptime + "**")
-            connection.disconnect("It was " + sender + ", they pressed the red button! Agh! *dead* I was alive for " + uptime)
             time.sleep(2)
-            discord.shutdown()
+            discord.shutdown(1, "sender", "on IRC")
             stoploop()
 
 def on_join(connection, event):
@@ -307,8 +307,8 @@ def on_disconnect(connection, event):
     cn = connection.get_nickname()
     if cn in botdict:
         botdict.pop(connection.get_nickname())
-    print(botdict)
-    print(discord.condict)
+    #print(botdict)
+    #print(discord.condict)
 
 class IRCbots():
     def __init__(self, nik, srv, prt, ch, mom=False, wh=None, discordid=None):
