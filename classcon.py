@@ -104,7 +104,7 @@ def stripcolors(m):
             msplit[i] = mi.replace("_", "pholderunderdash95130")
     m = " ".join(msplit)
     m = m.replace(r"\x31", "")
-    m = m.replace(r"\x0f", "")
+    m = m.replace("\x0f", "")
     m = m.replace(chr(2) + chr(29), "***")
     m = m.replace(chr(29) + chr(2), "***")
     m = m.replace(chr(2), "**")

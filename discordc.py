@@ -26,7 +26,7 @@ def load_the_config():
     if config == False:
         sys.exit(0)
     else:
-        #print(config)
+        print(config)
         for item in config:
             globals()[item] = config[item]
 
@@ -205,6 +205,9 @@ async def on_message(message):
         return
     content = ref + content
     contentsplit = content.split()
+    if ref == "" and idarg != "" and contentsplit[1].startswith("@") == True:
+        content = "%s %s %s" % (contentsplit[0], contentsplit[1] + "_" + contentsplit[2], " ".join(contentsplit[3:]))
+        contentsplit = content.split()
     cmd = contentsplit[0].lower()
     if AUTOCLIENTS == True and authorid not in leftirc:
         if authorid not in condict:
@@ -219,7 +222,7 @@ async def on_message(message):
                 checknick = fixnick(messge.author.name)
             while checnick == False:
                 if message.author.nick:
-                    checknick = fixnick(message.author.nick)
+                    checknick = fixnick(message.author.nick.replace(" ", "_"))
                 else:
                     checknick = "DiscordUser_" + str(random.randomint(100,9999))
             newclient = classcon.IRCbots(checknick + "[R]", IRCSERVER, IRCPORT, IRCCHAN, None, False, authorid)
@@ -273,7 +276,7 @@ async def on_message(message):
             if "--nick" in contentsplit:
                 contentsplit.remove("--nick")
                 if idarg_user.nick:
-                    idarg_name = idarg_user.nick
+                    idarg_name = idarg_user.nick.replace(" ", "_")
             if idarg in killed:
                 killed.pop(idarg)
                 print("Cleared user: " + idarg_name + " with ID: " + idarg + " from killed list, botop: " + message.author.name + " with ID: " + authorid + " used !fjoinirc")
@@ -352,7 +355,7 @@ async def on_message(message):
         if "--nick" in contentsplit:
             contentsplit.remove("--nick")
             if message.author.nick:
-                usenick = message.author.nick
+                usenick = message.author.nick.replace(" ", "_")
         if classcon.mom.is_connected() == False:
             send_my_message("Central bot is currently disconnected from IRC, please wait and try again.")
             return

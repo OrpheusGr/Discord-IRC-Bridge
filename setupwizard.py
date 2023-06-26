@@ -28,7 +28,7 @@ def totype(of, to):
         if to == "False":
            r = False
         elif to == "True":
-           r = "True"
+           r = True
         else:
            r = ""
     return r
