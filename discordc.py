@@ -119,13 +119,13 @@ def shutdown(msgornot=0, author=" ", irc="on Discord"):
     global shutting_down
     shutting_down = 1
     uptime = classcon.get_uptime()
-    if msgornot == 0:
+    if msgornot == 1:
         send_my_message("**Shutdown request by " + author + ". I was alive for " + uptime + "**")
-    sleeptime = (len(condict) * 2) + 5
+    sleeptime = (len(condict) * 0.5) + 5
     quitall("Relay shutting down")
     time.sleep(sleeptime)
     classcon.momobj.sent_quit_on()
-    classcon.mom.disconnect("It was " + author +  irc + ", they pressed the red button! Agh! *dead* I was alive for" + uptime)
+    classcon.mom.disconnect("It was " + author + " " + irc + ", they pressed the red button! Agh! *dead* I was alive for " + uptime)
     die()
 
 def die():
@@ -138,7 +138,7 @@ def quitall(reason):
         con = condict[item].conn
         setattr(con, "sent_quit", 1)
         con.disconnect(reason)
-        time.sleep(2)
+        time.sleep(0.5)
 
 async def send_my_message_async(message):
     global channel
@@ -183,16 +183,26 @@ async def on_message(message):
 
     authorid = str(message.author.id)
     content = replace_emojis(message.clean_content.replace("\n", " ").strip())
+    contentsplit = content.split()
 
     idarg = ""
+    idarg_user = ""
+    idarg_name = ""
+    idarg_nick = ""
     dirty_content = message.content.replace("\n", " ").strip()
     dirty_split = dirty_content.split()
     if len(dirty_split) > 1:
         dirty_one = dirty_split[1]
         dirty_one_len = len(dirty_one) - 1
         dirty_id = dirty_one[2:dirty_one_len]
-        if dirty_one.startswith("<@") == True and dirty_one.endswith(">") == True and dirty_id.isnumeric() == True:
+        if dirty_one.startswith("<@") == True and dirty_one.endswith(">") == True and dirty_id.isnumeric() == True and dirty_content[0].startswith("!"):
             idarg = dirty_id
+            idarg_user = await message.guild.fetch_member(int(idarg))
+            idarg_name = idarg_user.name
+            content = contentsplit[0] + " " + idarg_name + " " + " ".join(dirty_split[2:])
+            if idarg_user.nick:
+                idarg_nick = idarg_user.nick
+                content = contentsplit[0] + " " + idarg_nick.replace(" ", "_") + " " + " ".join(dirty_split[2:])
 
     if len(message.attachments) > 0:
         urls = get_urls(message.attachments)
@@ -205,11 +215,9 @@ async def on_message(message):
         return
     content = ref + content
     contentsplit = content.split()
-    if ref == "" and idarg != "" and contentsplit[1].startswith("@") == True:
-        content = "%s %s %s" % (contentsplit[0], contentsplit[1] + "_" + contentsplit[2], " ".join(contentsplit[3:]))
-        contentsplit = content.split()
+
     cmd = contentsplit[0].lower()
-    if AUTOCLIENTS == True and authorid not in leftirc:
+    if AUTOCLIENTS == True and authorid not in leftirc and cmd.startswith("!") == False and cmd != "!joinirc":
         if authorid not in condict:
             if authorid in killed:
                 ctime = round(time.time(), 0)
@@ -218,9 +226,10 @@ async def on_message(message):
                    return
             if authorid in classcon.savedclients:
                 checknick = fixnick(classcon.savedclients[authorid])
+                checknick = checknick[0:len(checknick)-3]
             else:
-                checknick = fixnick(messge.author.name)
-            while checnick == False:
+                checknick = fixnick(message.author.name)
+            while checknick == False:
                 if message.author.nick:
                     checknick = fixnick(message.author.nick.replace(" ", "_"))
                 else:
@@ -271,12 +280,11 @@ async def on_message(message):
             if classcon.mom.is_connected() == False:
                 send_my_message("Central bot is currently disconnected from IRC, please wait and try again.")
                 return
-            idarg_user = await message.guild.fetch_member(int(idarg))
-            idarg_name = idarg_user.name
+
             if "--nick" in contentsplit:
                 contentsplit.remove("--nick")
-                if idarg_user.nick:
-                    idarg_name = idarg_user.nick.replace(" ", "_")
+                if idarg_nick:
+                    idarg_name = idarg_nick.replace(" ", "_")
             if idarg in killed:
                 killed.pop(idarg)
                 print("Cleared user: " + idarg_name + " with ID: " + idarg + " from killed list, botop: " + message.author.name + " with ID: " + authorid + " used !fjoinirc")
@@ -377,7 +385,8 @@ async def on_message(message):
             else:
                 killed.pop(authorid)
 
-        if len(contentsplit) > 1:
+        if len(contentsplit) > 1 and idarg == "":
+            print(contentsplit[1], idarg)
             checknick = fixnick(contentsplit[1])
         else:
             if authorid in classcon.savedclients:

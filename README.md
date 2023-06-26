@@ -36,6 +36,9 @@ The token can also be found in the Discord Developer Portal
 - !whoami shows the sender's IRC nick
 
 ## Latest updates
+June 25-27th 2023
+- Bug fixes, improvements  
+
 June 24th 2023
 - Hot fix for a June 22 bug
 - use of !nick is now independent from AUTOCLIENTS and has its own True/False setting when wizard is ran

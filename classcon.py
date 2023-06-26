@@ -12,6 +12,8 @@ network = ""
 disconnectretries = 0
 quitf = {}
 savedclients = {}
+joining_saved_clients = []
+multi_join = []
 
 # Load the config
 def load_the_config():
@@ -189,19 +191,29 @@ def on_pubmsg(connection, event):
             uptime = get_uptime()
             discord.send_my_message("**Shutdown request by " +  sender + " on IRC. I was alive for " + uptime + "**")
             time.sleep(2)
-            discord.shutdown(1, "sender", "on IRC")
+            discord.shutdown(1, sender, "on IRC")
             stoploop()
 
 def on_join(connection, event):
     global mom
     global channel
     global discord
+    global joining_saved_clients
+    global multi_join
     if event.target != channel:
         connection.part(event.target)
         return
     if connection != mom:
         return
     if connection.get_nickname() != event.source.nick:
+        if len(joining_saved_clients) > 0 and event.source.nick in botdict:
+             multi_join.append(event.source.nick)
+             if len(multi_join) < len(savedclients):
+                 return
+        if len(multi_join) == len(savedclients):
+            discord.send_my_message("Connected saved clients: " + "**" + "** | **".join(multi_join) + "**")
+            multi_join = []
+            return
         discord.send_my_message("-> **" + event.source.nick + " joined " + event.target + "**")
     else:
         time.sleep(5)
@@ -214,6 +226,7 @@ def on_join(connection, event):
         discord.send_my_message(joinmsg)
         if savedclients != {}:
             for client in savedclients:
+                joining_saved_clients.append(client)
                 time.sleep(3)
                 newclient = IRCbots(savedclients[client], IRCSERVER, IRCPORT, IRCCHAN, None, False, client)
                 newclientcon = newclient.conn
