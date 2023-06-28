@@ -12,8 +12,6 @@ network = ""
 disconnectretries = 0
 quitf = {}
 savedclients = {}
-joining_saved_clients = []
-multi_join = []
 
 # Load the config
 def load_the_config():
@@ -97,7 +95,6 @@ def get_uptime():
 
 def stripcolors(m):
     bold_italic = 0
-    #m = m.replace("pholderunderdash95130", "_")
     regexc = re.compile(chr(3) + "(\d{,2}(,\d{,2})?)?", re.UNICODE)
     msplit = m.split()
     for i in range(len(msplit)):
@@ -123,10 +120,35 @@ def stripcolors(m):
     m = m.replace("pholderunderdash95130", "_")
     return m
 
+def split_msg(msg, max_chars):
+    piece = ""
+    all_pieces = []
+    msgsplit = msg.split()
+    if len(msgsplit) == 1 and len(msgsplit[0]) > max_chars:
+        msgsplit = [msgsplit[0][0:max_chars], msgsplit[0][max_chars:]]
+    i = 0
+    while i < len(msgsplit):
+        if piece != "":
+            to_be_piece = piece + " " + msgsplit[i]
+        else:
+            to_be_piece = piece + msgsplit[i]
+        if len(piece) <= max_chars and len(to_be_piece) <= max_chars:
+            piece = to_be_piece
+        else:
+            all_pieces.append([piece])
+            #print(piece, len(piece))
+            piece = ""
+            i -= 1
+        i += 1
+    all_pieces.append([piece])
+    #print(piece, len(piece))
+    return all_pieces
+
 def find_nick_by_id(uid):
     for i in botdict:
         if botdict[i] == uid:
             return i
+    return False
 
 def on_connectbot(connection, event):
     global botdict
@@ -138,7 +160,7 @@ def on_connectbot(connection, event):
         botdict[connection.get_nickname()] = connection.discordid
         #print(botdict)
     elif connection == mom:
-        print("Successful connection to", event.source)
+        print("[IRC] Successful connection to", event.source)
         time.sleep(2)
         discord.setstatus()
     connection.join(channel)
@@ -191,32 +213,28 @@ def on_pubmsg(connection, event):
             uptime = get_uptime()
             discord.send_my_message("**Shutdown request by " +  sender + " on IRC. I was alive for " + uptime + "**")
             time.sleep(2)
-            discord.shutdown(1, sender, "on IRC")
+            discord.shutdown(0, sender, "on IRC")
             stoploop()
 
 def on_join(connection, event):
     global mom
     global channel
     global discord
-    global joining_saved_clients
-    global multi_join
+    connection_name = connection.get_nickname()
     if event.target != channel:
         connection.part(event.target)
         return
     if connection != mom:
         return
-    if connection.get_nickname() != event.source.nick:
-        if len(joining_saved_clients) > 0 and event.source.nick in botdict:
-             multi_join.append(event.source.nick)
-             if len(multi_join) < len(savedclients):
-                 return
-        if len(multi_join) == len(savedclients):
-            discord.send_my_message("Connected saved clients: " + "**" + "** | **".join(multi_join) + "**")
-            multi_join = []
-            return
+    if connection_name != event.source.nick:
+        if event.source.nick in botdict:
+            did = botdict[event.source.nick]
+            conobj = discord.condict[did]
+            conobj.myprivmsg_line = event.source + " PRIVMSG " + channel + " :"
         discord.send_my_message("-> **" + event.source.nick + " joined " + event.target + "**")
     else:
-        time.sleep(5)
+        momobj.myprivmsg_line = event.source + " PRIVMSG " + channel + " :"
+        time.sleep(2)
         with thread_lock:
              print("[IRC] Joined", channel)
         if AUTOCLIENTS != True:
@@ -226,7 +244,6 @@ def on_join(connection, event):
         discord.send_my_message(joinmsg)
         if savedclients != {}:
             for client in savedclients:
-                joining_saved_clients.append(client)
                 time.sleep(3)
                 newclient = IRCbots(savedclients[client], IRCSERVER, IRCPORT, IRCCHAN, None, False, client)
                 newclientcon = newclient.conn
@@ -293,10 +310,16 @@ def on_nick(connection, event):
         x = botdict[nick]
         botdict.pop(nick)
         botdict[newnick] = x
+        conobj = discord.condict[x]
+        conobj.myprivmsg_line = newnick + "".join(event.source.split("!")[1:]) + " PRIVMSG " + channel + " :"
+    else:
+        if connection.get_nickname() == event.source.nick:
+            momobj.myprivmsg_line = event.source + " PRIVMSG " + channel + " :"
     event_msg = "**%s** *is now known as* **%s**" % (nick, newnick)
     discord.send_my_message(event_msg)
 
 def on_disconnect(connection, event):
+    connection_name = connection.get_nickname()
     if connection == mom:
         if momobj.sent_quit == 1:
              momobj.sent_quit = 0
@@ -341,6 +364,7 @@ class IRCbots():
         else:
             self.mother = None
             self.conn.sent_quit = 0
+            self.myprivmsg_line = ""
             savedclients[discordid] = self.nick
             settings.saveclients(savedclients)
         if wh:
@@ -379,5 +403,12 @@ class IRCbots():
     def sendmsg(self, msg):
         if self.conn.is_connected() == False:
             return
-        self.conn.privmsg(channel, msg)
+        msg = split_msg(msg, 512-len(self.myprivmsg_line))
+        self.delay_msg = 0
+        for i in range(len(msg)):
+            self.delay_msg += 0.5
+            time.sleep(self.delay_msg)
+            joint = msg[i][0]
+            self.conn.privmsg(channel, joint)
         self.lastmsg = round(time.time(),0)
+        self.delay_msg = 0

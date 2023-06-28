@@ -81,7 +81,11 @@ def ircdressup(m):
 
 def get_reference(r, p, a):
     rid = r.author.id
-    rauthor = r.author.name
+    ircnick = classcon.find_nick_by_id(str(rid))
+    if ircnick == False:
+        rauthor = r.author.name
+    else:
+        rauthor = ircnick
     if str(r.webhook_id) == whid:
         rauthor = rauthor[0:len(rauthor)-6]
     rurl = ""
@@ -266,7 +270,7 @@ async def on_message(message):
 
         #shutdown command -  Quits IRC, kills Discord bot, stops process.
         elif cmd == "!shutdown":
-            shutdown(0, message.author.name)
+            shutdown(1, message.author.name)
             return
 
         #fjoinirc command - Makes a client for another user
@@ -352,7 +356,7 @@ async def on_message(message):
                     send_my_message("This user doesn't have a connected client and there's no saved client for them")
                     return
             else:
-                send_my_message("This user's IRC nick is: " + classcon.find_nick_by_id(idarg))
+                send_my_message("This user's IRC nick is: " + str(classcon.find_nick_by_id(idarg)))
                 return
 
     #public commands block
@@ -477,7 +481,7 @@ async def on_message(message):
             else:
                 send_my_message("You don't have a connected client and there's no saved client for you.")
                 return
-        send_my_message("Your IRC nick is: " + classcon.find_nick_by_id(authorid))
+        send_my_message("Your IRC nick is: " + str(classcon.find_nick_by_id(authorid)))
         return
 
     #public commands close block

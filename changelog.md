@@ -1,3 +1,23 @@
+# June 22nd 2023
+- Some commands have been renamed for clarity:
+  - !myircnick - New name: !whoami (same functionality)
+  - !ircnick   - New name: !nick   (same functionality)
+  - !usernick  - New name: !whois  (same functionality)
+  - !fircnick  - New name: !fnick  (same functionality)
+- New command - ```!leaveirc [--delete] [reason]``` Disconnects the user's client. (both parameters are opt
+ional)
+  - If --delete is used the saved client will be deleted and will not be rejoined when the bot restarts.
+  - If AUTOCLIENTS is True and a user has left IRC, a client will not be made for them unless they use !joi
+nirc
+- !joinirc updated to use the user's saved nick (if a nick is not provided)
+  - If the user doesn't have a saved nick, their username will be used (as it used to be)
+  - If a nick is provided it will be saved.
+  - Added an optional parameter --nick - If used, and the user has a local nick, it will be used on IRC
+- --nick does the same in !fjoinirc
+- Kill has been updated to accept a --delete parameter. If used it will delete the user's saved client.
+- New command - ```!relayhelp <listcommands|command>``` Shows a list of available commamds or verbose info
+for a command
+
 # June 19th 2023
 - Added 4 new commands
   - !fjoinirc - Makes a client for another user, used only by users in the botop list

@@ -36,38 +36,21 @@ The token can also be found in the Discord Developer Portal
 - !whoami shows the sender's IRC nick
 
 ## Latest updates
+June 29th 2023
+- Bugs fixed
+- Added a function that splits long messages into appropriate pieces. (IRC has a limit of 512 characters per line sent to the server)
+- When a Discord user replies to a Discord message, if the sender of the original message is a Discord user and has an IRC client through the relay, their client's nick will be shown (their Discord username was shown previously.) This is done for clarity of the IRC users, as they only see the IRC nicks and not the Discord usernames.  
+
 June 25-27th 2023
-- Bug fixes, improvements  
+- Bug fixes, improvements
+- When new settings are added with updates they will be added with default values, when you pull the updates and start the bot. You can then use the setupwizard to edit those values.  
 
 June 24th 2023
 - Hot fix for a June 22 bug
-- use of !nick is now independent from AUTOCLIENTS and has its own True/False setting when wizard is ran
+- use of !nick is now independent from AUTOCLIENTS and has its own True/False setting when wizard is ra
 - misc improvements  
 
-June 22nd 2023
-- Some commands have been renamed for clarity:
-  - !myircnick - New name: !whoami (same functionality)
-  - !ircnick   - New name: !nick   (same functionality)
-  - !usernick  - New name: !whois  (same functionality)
-  - !fircnick  - New name: !fnick  (same functionality)
-- New command - ```!leaveirc [--delete] [reason]``` Disconnects the user's client. (both parameters are optional)
-  - If --delete is used the saved client will be deleted and will not be rejoined when the bot restarts.
-  - If AUTOCLIENTS is True and a user has left IRC, a client will not be made for them unless they use !joinirc
-- !joinirc updated to use the user's saved nick (if a nick is not provided)
-  - If the user doesn't have a saved nick, their username will be used (as it used to be)
-  - If a nick is provided it will be saved.
-  - Added an optional parameter --nick - If used, and the user has a local nick, it will be used on IRC
-- --nick does the same in !fjoinirc 
-- Kill has been updated to accept a --delete parameter. If used it will delete the user's saved client.
-- New command - ```!relayhelp <listcommands|command>``` Shows a list of available commamds or verbose info for a command  
 
-June 19th 2023
-- Added 4 new commands
-  - !fjoinirc - Makes a client for another user, used only by users in the botop list
-  - !fircnick - Forcefully changes a user's nick, used only by users in the botop list, for moderation use
-  - !usernick - Shows another user's nick, or their saved nick, only used by users in botop list
-  - !myircnick - Shows the user's IRC nick, or their saved one, if there is one, when they don't have a connected client.
-- Found and fixed a couple bugs  
 
 For less recent updates see changelog.md
 
@@ -75,6 +58,7 @@ For less recent updates see changelog.md
 - Before starting the bot you need to `python3 setupwizard.py` to make a config file for the bot.
 - When you're done with the setup wizard, launch the bot using `python3 main.py`.
 - You may also use the setup wizard to edit some of the values in the future. (It will ask if you want to make a new config and when you say no it will ask if you want to edit the values) Remember to restart the bot for the new settings to be loaded.
+- When new settings are added with updates they will be added to your config with default values, when you pull the update and start the bot. You can then use the setupwizard to edit those values.
 
 ## License
 
