@@ -187,7 +187,10 @@ def on_pubmsg(connection, event):
         return
     host = event.source.host
     messagenot = stripcolors(event.arguments[0])
+    messagenot = "\x0f"
     message = messagenot.split()
+    if len(message) == 0:
+        return
     cmd = message[0].lower()
     #public commands block
     if cmd == "!relayuptime":
