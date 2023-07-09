@@ -36,21 +36,13 @@ The token can also be found in the Discord Developer Portal
 - !whoami shows the sender's IRC nick
 
 ## Latest updates
+July 9th 2023
+- Fixed crashing bug (hopefully) The msg_split function was causing an infinite loop which eventually killed the bot/timedout the connections  
+
 June 29th 2023
 - Bugs fixed
 - Added a function that splits long messages into appropriate pieces. (IRC has a limit of 512 characters per line sent to the server)
 - When a Discord user replies to a Discord message, if the sender of the original message is a Discord user and has an IRC client through the relay, their client's nick will be shown (their Discord username was shown previously.) This is done for clarity of the IRC users, as they only see the IRC nicks and not the Discord usernames.  
-
-June 25-27th 2023
-- Bug fixes, improvements
-- When new settings are added with updates they will be added with default values, when you pull the updates and start the bot. You can then use the setupwizard to edit those values.  
-
-June 24th 2023
-- Hot fix for a June 22 bug
-- use of !nick is now independent from AUTOCLIENTS and has its own True/False setting when wizard is ra
-- misc improvements  
-
-
 
 For less recent updates see changelog.md
 

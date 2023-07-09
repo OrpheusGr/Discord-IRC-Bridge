@@ -135,6 +135,9 @@ def split_msg(msg, max_chars):
         if len(piece) <= max_chars and len(to_be_piece) <= max_chars:
             piece = to_be_piece
         else:
+            if piece == "":
+                msgsplit = msgsplit[0:i-1] + [to_be_piece[0:max_chars], to_be_piece[max_chars:]] + msgsplit[i+1:]
+                piece = msgsplit[i-1]
             all_pieces.append([piece])
             #print(piece, len(piece))
             piece = ""

@@ -128,7 +128,6 @@ def send_my_message(message):
     if msg_time == 0:
         msg_time = ctime
     elif diff < 1:
-        print("Sleeping for", 1-diff)
         time.sleep(1-diff)
     else:
          msg_cooldown = 0
@@ -183,7 +182,6 @@ async def on_message(message):
     checknick = False
     ref = ""
     msgrefpin = False
-    print(time.time())
     # Don't reply to itself or to the webhook or if the channel is not the one in settings
     if str(message.webhook_id) == whid:
         return
@@ -262,9 +260,6 @@ async def on_message(message):
     # botops commands block
     if authorid in DISCORDBOTOPS:
 
-        if cmd == "!test":
-            for i in range(1,10):
-                send_my_message("test cooldown")
         #kill command - Kills (sends a quit message) a user's client by force (used for moderation)
         if cmd == "!kill":
             if len(contentsplit) == 1 or idarg == "":
@@ -410,7 +405,7 @@ async def on_message(message):
                 killed.pop(authorid)
 
         if len(contentsplit) > 1 and idarg == "":
-            print(contentsplit[1], idarg)
+            #print(contentsplit[1], idarg)
             checknick = fixnick(contentsplit[1])
         else:
             if authorid in classcon.savedclients:
