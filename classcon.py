@@ -338,9 +338,9 @@ def on_disconnect(connection, event):
         return
     if connection.sent_quit != 1:
         discord.send_my_message("<@" + connection.discordid + ">" + " Unexpectedly disconnected from " + event.source + " " + event.arguments[0])
-    obj = discord.condict[connection.discordid]
-    del obj
     if connection.discordid in discord.condict:
+        obj = discord.condict[connection.discordid]
+        del obj
         discord.condict.pop(connection.discordid)
     cn = connection.get_nickname()
     if cn in botdict:

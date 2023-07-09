@@ -19,6 +19,9 @@ killed = {}
 leftirc = {}
 help = helpreplies.help
 shutting_down = 0
+msg_counter = 0
+msg_time = 0
+msg_cooldown = 0
 
 # Load the config
 def load_the_config():
@@ -117,6 +120,19 @@ def setstatus():
 
 def send_my_message(message):
     global client
+    global msg_counter
+    global msg_time
+    global msg_cooldown
+    ctime = time.time()
+    diff = ctime - msg_time
+    if msg_time == 0:
+        msg_time = ctime
+    elif diff < 1:
+        print("Sleeping for", 1-diff)
+        time.sleep(1-diff)
+    else:
+         msg_cooldown = 0
+    msg_time = ctime
     asyncio.run_coroutine_threadsafe(send_my_message_async(message), client.loop)
 
 def shutdown(msgornot=0, author=" ", irc="on Discord"):
@@ -167,6 +183,7 @@ async def on_message(message):
     checknick = False
     ref = ""
     msgrefpin = False
+    print(time.time())
     # Don't reply to itself or to the webhook or if the channel is not the one in settings
     if str(message.webhook_id) == whid:
         return
@@ -245,6 +262,9 @@ async def on_message(message):
     # botops commands block
     if authorid in DISCORDBOTOPS:
 
+        if cmd == "!test":
+            for i in range(1,10):
+                send_my_message("test cooldown")
         #kill command - Kills (sends a quit message) a user's client by force (used for moderation)
         if cmd == "!kill":
             if len(contentsplit) == 1 or idarg == "":
