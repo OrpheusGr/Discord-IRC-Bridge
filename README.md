@@ -1,5 +1,5 @@
-# DiscIRC-Relay
-An IRC &lt;-> Discord Relay that creates an IRC client for a Discord User and uses a Discord webhook to post IRC messages to Discord, faking a Discord user for better readability.
+# Discord-IRC-Bridge
+An IRC <-> Discord Bridge. Each Discord user of a chosen channel gets a unique IRC client. IRC messages are sent through a webhook, making them look almost like real Discord Users (with a bot tag). To run this you'll need to have a clone exception set up on your IRCd's config or one to be requested from the IRC network's opers. 
 
 ## Requirements
 A minimum of Python 3.5
@@ -13,7 +13,7 @@ Install the following python libraries using pip:
 
 Clone/Download this repository and do 'python3 setupwizard.py' to create a config file.
 
-Add a new application and bot user to your Discord account, (on the Discord Developer Portal https://discord.com/developers/applications)  then invite your bot to a server you manage:
+Add a new application and bot user to your Discord account, (on the Discord Developer Portal https://discord.com/developers/applications) then invite your bot to a server you manage:
 
 https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permissions=3072  
 (change CLIENT_ID to your application's client_id)
@@ -22,18 +22,19 @@ The token can also be found in the Discord Developer Portal
 
 ## Features
 
-- Uses webhooks to spoof IRC nicks as Discord "users"
+- Uses webhooks to spoof IRC nicks as Discord "users" (bot tag next to their name, all webhooks have it)
 - Makes an IRC client for a Discord user upon their request (use !joinirc in the relayed Discord channel.) Or automatically when they send a Discord message. You can choose between a command or auto connecting when you run the setupwizard.py
 - Bot ops for both IRC and Discord that can use moderation/maintainance commands.
-- !kill command to disconnect someone's client (only for botops)
-- Change your client's nick with !nick (can be disabled)
-- IRC users can mention Discord users just by typing the nick of their client.
-- !shutdown to kill the bot. (only for botops)
-- Auto Disconnecting of IRC clients after a time limit that you can set. (can be disabled)
-- !fjoinirc make a client for another user (only for botops)
-- !fnick change a user's IRC nick (only for botops)
-- !whois shows another user's IRC nick (only for botops)
-- !whoami shows the sender's IRC nick
+- The following commands work on Discord:
+  - !kill command to disconnect someone's client (only for botops)
+  - Change your IRC client's nick with !nick (can be disabled)
+  - IRC users can mention Discord users just by typing the nick of their client.
+  - Auto Disconnecting of IRC clients after a time limit that you can set. (can be disabled)
+  - !fjoinirc make an IRC client for another Discord user (only for botops)
+  - !fnick change a Discord user's IRC nick (only for botops)
+  - !whois shows another Discord user's IRC nick (only for botops)
+  - !whoami shows the sender's IRC nick
+  - !shutdown to kill the bot. (only for botops) (works on IRC too)  
 
 ## Latest updates
 July 9th 2023
