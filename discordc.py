@@ -175,7 +175,7 @@ async def shutdown_async():
     await client.close()
 
 async def on_presence_update(before, after):
-    print(before, after)
+    print("presence", before, after)
 
 @client.event
 async def on_message(message):
