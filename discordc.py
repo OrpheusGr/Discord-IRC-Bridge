@@ -39,6 +39,7 @@ load_the_config()
 intents = discord.Intents.all()
 intents.members = True
 intents.messages = True
+intents.presences = True
 client = discord.Client(intents=intents)
 
 whid = WEBHOOK.split("/")[5]
@@ -120,18 +121,6 @@ def setstatus():
 
 def send_my_message(message):
     global client
-    global msg_counter
-    global msg_time
-    global msg_cooldown
-    ctime = time.time()
-    diff = ctime - msg_time
-    if msg_time == 0:
-        msg_time = ctime
-    elif diff < 1:
-        time.sleep(1-diff)
-    else:
-         msg_cooldown = 0
-    msg_time = ctime
     asyncio.run_coroutine_threadsafe(send_my_message_async(message), client.loop)
 
 def shutdown(msgornot=0, author=" ", irc="on Discord"):
@@ -142,7 +131,6 @@ def shutdown(msgornot=0, author=" ", irc="on Discord"):
         send_my_message("**Shutdown request by " + author + ". I was alive for " + uptime + "**")
     sleeptime = (len(condict) * 0.5) + 5
     quitall("Relay shutting down")
-    time.sleep(sleeptime)
     classcon.momobj.sent_quit_on()
     classcon.mom.disconnect("It was " + author + " " + irc + ", they pressed the red button! Agh! *dead* I was alive for " + uptime)
     die()
@@ -161,6 +149,19 @@ def quitall(reason):
 
 async def send_my_message_async(message):
     global channel
+    global msg_counter
+    global msg_time
+    global msg_cooldown
+    ctime = time.time()
+    diff = ctime - msg_time
+    if msg_time == 0:
+        msg_time = ctime
+    if diff < 1:
+        msg_cooldown += 1
+        await asyncio.sleep(msg_cooldown)
+    else:
+         msg_cooldown = 0
+    msg_time = ctime
     await channel.send(message.strip())
 
 async def setstatus_async(a):
@@ -169,9 +170,12 @@ async def setstatus_async(a):
     else:
         status = "Discord & IRC"
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=status))
-
+@client.event
 async def shutdown_async():
     await client.close()
+
+async def on_presence_update(before, after):
+    print(before, after)
 
 @client.event
 async def on_message(message):
