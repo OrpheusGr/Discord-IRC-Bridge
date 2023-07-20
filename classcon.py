@@ -93,32 +93,33 @@ def get_uptime():
         result += str(seconds) + "s "
     return result
 
-def stripcolors(m):
+def IrcToDiscText(message):
     bold_italic = 0
     regexc = re.compile(chr(3) + "(\d{,2}(,\d{,2})?)?", re.UNICODE)
-    msplit = m.split()
+    message = message.replace("\x1d", "\\x1d")
+    msplit = message.split()
     for i in range(len(msplit)):
         mi = msplit[i]
         if mi.startswith("http") or mi.startswith("<http"):
             msplit[i] = mi.replace("_", "pholderunderdash95130")
-    m = " ".join(msplit)
-    m = m.replace(r"\x31", "")
-    m = m.replace("\x0f", "")
-    m = m.replace(chr(2) + chr(29), "***")
-    m = m.replace(chr(29) + chr(2), "***")
-    m = m.replace(chr(2), "**")
-    if m.count(chr(29)) % 2 != 0:
-        m = m + " " + chr(29)
-    m = m.replace(chr(29), "_")
-    m = regexc.sub("", m)
-    if m.count("***") % 2 != 0:
-        m = m + "***"
+    message = " ".join(msplit)
+    message = message.replace(r"\x31", "")
+    message = message.replace("\x0f", "")
+    message = message.replace(chr(2) + chr(29), "***")
+    message = message.replace(chr(29) + chr(2), "***")
+    message = message.replace(chr(2), "**")
+    if message.count(chr(29)) % 2 != 0:
+        message = message + " " + chr(29)
+    message = message.replace("\\x1d", "_")
+    message = regexc.sub("", message)
+    if message.count("***") % 2 != 0:
+        message = message + "***"
         bold_italic = 1
-    if m.count("**") % 2 != 0:
+    if message.count("**") % 2 != 0:
         if bold_italic == 0:
-            m = m + "**"
-    m = m.replace("pholderunderdash95130", "_")
-    return m
+            message = message + "**"
+    message = message.replace("pholderunderdash95130", "_")
+    return message
 
 def split_msg(msg, max_chars):
     piece = ""
@@ -139,12 +140,10 @@ def split_msg(msg, max_chars):
                 msgsplit = msgsplit[0:i-1] + [to_be_piece[0:max_chars], to_be_piece[max_chars:]] + msgsplit[i+1:]
                 piece = msgsplit[i-1]
             all_pieces.append([piece])
-            #print(piece, len(piece))
             piece = ""
             i -= 1
         i += 1
     all_pieces.append([piece])
-    #print(piece, len(piece))
     return all_pieces
 
 def find_nick_by_id(uid):
@@ -161,7 +160,6 @@ def on_connectbot(connection, event):
     disconnectretries = 0
     if connection != mom:
         botdict[connection.get_nickname()] = connection.discordid
-        #print(botdict)
     elif connection == mom:
         print("[IRC] Successful connection to", event.source)
         time.sleep(2)
@@ -170,8 +168,12 @@ def on_connectbot(connection, event):
 
 
 def on_nicknameinuse(connection, event):
-    x = connection.get_nickname() + "_"
-    connection.nick(x)
+    cnick = connection.get_nickname()
+    if cnick[-3:] == "[R]":
+        newnick = cnick[0:len(cnick)-3] + "_[R]"
+    else:
+        newnick = cnick + "_"
+    connection.nick(newnick)
 
 def on_pubmsg(connection, event):
     global botdict
@@ -189,7 +191,7 @@ def on_pubmsg(connection, event):
     if sender in botdict:
         return
     host = event.source.host
-    messagenot = stripcolors(event.arguments[0])
+    messagenot = IrcToDiscText(event.arguments[0])
     message = messagenot.split()
     if len(message) == 0:
         return
@@ -250,10 +252,12 @@ def on_join(connection, event):
         if savedclients != {}:
             for client in savedclients:
                 time.sleep(3)
-                newclient = IRCbots(savedclients[client], IRCSERVER, IRCPORT, IRCCHAN, None, False, client)
-                newclientcon = newclient.conn
-                discord.condict[client] = newclient
-                newclient.connect()
+                checkmember = discord.is_member(client)
+                if checkmember == True:
+                    newclient = IRCbots(savedclients[client], IRCSERVER, IRCPORT, IRCCHAN, None, False, client)
+                    newclientcon = newclient.conn
+                    discord.condict[client] = newclient
+                    newclient.connect()
 
 def on_part(connection, event):
     if event.target != channel:
@@ -348,8 +352,9 @@ def on_disconnect(connection, event):
     cn = connection.get_nickname()
     if cn in botdict:
         botdict.pop(connection.get_nickname())
-    #print(botdict)
-    #print(discord.condict)
+
+def on_error(connection, event):
+    print(event.source, event.arguments)
 
 class IRCbots():
     def __init__(self, nik, srv, prt, ch, mom=False, wh=None, discordid=None):
@@ -392,6 +397,7 @@ class IRCbots():
             c.add_global_handler("nick", on_nick)
             c.add_global_handler("disconnect", on_disconnect)
             c.add_global_handler("ping", self.on_ping)
+            c.add_global_handler("error", on_error)
 
     def on_ping(self, connection, event):
         if connection == mom:
@@ -417,3 +423,11 @@ class IRCbots():
             self.conn.privmsg(channel, joint)
         self.lastmsg = round(time.time(),0)
         self.delay_msg = 0
+
+    def set_away(self, msg=None):
+        if self.conn.is_connected() == False:
+            return
+        if msg == None:
+            self.conn.send_raw("AWAY")
+        else:
+            self.conn.send_raw("AWAY :" + msg)

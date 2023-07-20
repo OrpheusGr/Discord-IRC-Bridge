@@ -36,11 +36,11 @@ def load_the_config():
 load_the_config()
 
 # Create bot
-intents = discord.Intents.all()
-intents.members = True
-intents.messages = True
-intents.presences = True
-client = discord.Client(intents=intents)
+Intents = discord.Intents.all()
+Intents.members = True
+Intents.messages = True
+Intents.presences = True
+client = discord.Client(intents=Intents)
 
 whid = WEBHOOK.split("/")[5]
 
@@ -75,12 +75,17 @@ def ircdressup(m):
         if msplit[i].startswith("http") or msplit[i].startswith("<http"):
             msplit[i] = msplit[i].replace("_", "underdashreplacementplaceholderdiscordbotregexsucks")
     m = " ".join(msplit)
-    m = m.replace("***", chr(29) + "\x02")
-    m = m.replace("**", "\x02")
-    m = m.replace("*", chr(29))
-    m = m.replace("```", "")
-    m = m.replace("_", chr(29))
+    m = dressup_replace(m, "***", chr(29) + "\x02")
+    m = dressup_replace(m, "**", "\x02")
+    m = dressup_replace(m, "*", chr(29))
+    m = dressup_replace(m, "```", "")
+    m = dressup_replace(m, "_", chr(29))
     m = m.replace("underdashreplacementplaceholderdiscordbotregexsucks", "_")
+    return m
+
+def dressup_replace(m, substr, replacement):
+    if m.count(substr) % 2 == 0:
+        m = m.replace(substr, replacement)
     return m
 
 def get_reference(r, p, a):
@@ -130,7 +135,7 @@ def shutdown(msgornot=0, author=" ", irc="on Discord"):
     if msgornot == 1:
         send_my_message("**Shutdown request by " + author + ". I was alive for " + uptime + "**")
     sleeptime = (len(condict) * 0.5) + 5
-    quitall("Relay shutting down")
+    quitall("Bridge shutting down")
     classcon.momobj.sent_quit_on()
     classcon.mom.disconnect("It was " + author + " " + irc + ", they pressed the red button! Agh! *dead* I was alive for " + uptime)
     die()
@@ -164,18 +169,37 @@ async def send_my_message_async(message):
     msg_time = ctime
     await channel.send(message.strip())
 
+
+def is_member(id):
+    guild = client.get_guild(int(DISCORDSERVER))
+    member = guild.get_member(int(id))
+    if member == None:
+        return False
+    else:
+        return True
+
+
 async def setstatus_async(a):
     if AUTOCLIENTS != True:
         status = "!joinirc to connect to IRC"
     else:
         status = "Discord & IRC"
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=status))
-@client.event
+
 async def shutdown_async():
     await client.close()
 
+@client.event
 async def on_presence_update(before, after):
-    print("presence", before, after)
+    userid = str(after.id)
+    dname = after.display_name
+    if userid in condict:
+        ucon = condict[userid]
+        if after.raw_status == "online":
+            ucon.set_away()
+        else:
+            awayline = "Discord Status: " + after.raw_status
+            ucon.set_away(awayline)
 
 @client.event
 async def on_message(message):
@@ -409,7 +433,6 @@ async def on_message(message):
                 killed.pop(authorid)
 
         if len(contentsplit) > 1 and idarg == "":
-            #print(contentsplit[1], idarg)
             checknick = fixnick(contentsplit[1])
         else:
             if authorid in classcon.savedclients:
@@ -530,8 +553,8 @@ async def on_ready():
             return
 
         if DISCORDSERVER == "":
-            print("[Discord] You have not configured a server to use in settings.json")
-            print("[Discord] Please put one of the server IDs listed below in settings.json")
+            print("[Discord] You have not configured a server to use in the config, please run: python3 setupwizard.py")
+            print("[Discord] Input one of the ID's below when you are asked for the Discord Server ID")
 
             for server in client.guilds:
                 print("[Discord] %s: %s" % (server.name, server.id))
@@ -551,8 +574,8 @@ async def on_ready():
         server = findServer[0]
 
         if DISCORDCHAN == "":
-            print("[Discord] You have not configured a channel to use in settings.json")
-            print("[Discord] Please put one of the channel IDs listed below in settings.json")
+            print("[Discord] You have not configured a channel to use. Run python3 setupwizard.py")
+            print("[Discord] Please put one of the channel IDs listed below when asked for channel ID")
             for channel in server.channels:
                 if channel.type == discord.ChannelType.text:
                     print("[Discord] %s: %s" % (channel.name, channel.id))

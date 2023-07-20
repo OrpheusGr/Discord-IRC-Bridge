@@ -1,3 +1,20 @@
+# July 20th 2023
+
+- When a Discord user changes their status from online to Idle, Dnd or offline, it will be set as their away message on IRC
+  - When they go back online their away will be cleared
+- Changed the alternative nicknames to be ```nickhere_[R]``` instead of ```nickhere[R]_```
+- When the bot connects the saved IRC clients (during start up) it will no longer connect the IRC clients of users that are not in the Discord server. (removed/left/any reason)
+- Fixed a bug in replacing IRC italics with Discord italics style.
+- README updates, removed updates from README, added link to the Wiki, added Credits, raised minimum required Python version to 3.9 to support discord.py 2.0+ feats.
+
+# July 9th 2023
+- Fixed crashing bug (hopefully) The msg_split function was causing an infinite loop which eventually kills the bot
+
+# June 29th 2023
+- Bugs fixed
+- Added a function that splits long messages into appropriate pieces. (IRC has a limit of 512 characters per line sent to the server.)
+- When a Discord user replies to a Discord message, if the sender of the original message is a Discord user has an IRC client through the relay, their client's nick will be shown (their Discord username was shown previously.) This is done for clarity of the IRC users, as they only see the IRC nicks and not the Discord usernames.
+
 # June 22nd 2023
 - Some commands have been renamed for clarity:
   - !myircnick - New name: !whoami (same functionality)
