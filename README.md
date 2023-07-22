@@ -31,12 +31,14 @@ https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permission
 - Uses webhooks to spoof IRC nicks as Discord "users" (bot tag next to their name, all webhooks have it)
 - Makes an IRC client for a Discord user upon their request (use !joinirc in the relayed Discord channel.) Or automatically when they send a Discord message. You can choose between a command or auto connecting when you run the setupwizard.py
 - Bot ops for both IRC and Discord that can use moderation/maintainance commands.
-- The following commands and features are provided:
+- The bot picks up on Discord user's status changes and sets them as their AWAY status on IRC (provided they have an IRC client connected)
+- IRC users can mention Discord users just by typing the nick of their IRC client.
+- Auto Disconnecting of IRC clients after a time limit that you can set. (can be disabled)
+- The IRC clients that are created are saved and will reconnect if you restart the bot.
+- The following commands are provided:
   - !kill command to disconnect someone's client (only for botops)
   - Change your IRC client's nick with !nick (can be disabled)
   - IRC users can mention Discord users just by typing the nick of their IRC client.
-  - Auto Disconnecting of IRC clients after a time limit that you can set. (can be disabled)
-  - The IRC clients that are created are saved and will reconnect if you restart the bot.
   - !fjoinirc make an IRC client for another Discord user (only for botops)
   - !fnick change a Discord user's IRC nick (only for botops)
   - !whois shows another Discord user's IRC nick (only for botops)
