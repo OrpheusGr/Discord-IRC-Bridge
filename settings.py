@@ -1,7 +1,7 @@
 import os
 import pickle
 
-default_values = {"NICKCHANGE": True, "TIMEKILLED": 10, "INACTIVITY": 0, "AUTOCLIENTS": False}
+default_values = {"NICKCHANGE": True, "TIMEKILLED": 1, "INACTIVITY": 0, "AUTOCLIENTS": False}
 
 if os.path.isfile("config.pkl") == False:
     open("config.pkl", 'w').close()

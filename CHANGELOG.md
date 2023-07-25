@@ -1,3 +1,15 @@
+# Undefined future update
+
+- Added the relaying of message edits to IRC. 
+  - When a Discord user that has an IRC client edits one of their Discord messages it will be shown on IRC as: ```EDIT: their post-edit message will be here```
+- Improved the AWAY feature to check a User's status when their IRC client connects (instead of relying only on the time the user actually changes their status
+  - Previously a user that was not online when the Bridge started up or when the Discord user created their IRC client, their AWAY message wouldn't be set on IRC as the bot only listened for status *changes*. Now when a client connects to IRC the Discord user's status is checked and set accordingly as their AWAY message. 
+- Improved the connection of the saved clients when the bot starts
+  - The dictionary containing the nessecary info will be made before the main bot connects to IRC.
+  - That fixes a bug where double clients where created when a Discord user was sending messages during the bot was starting. 
+  - The clients and connection objects are made as the bot connects to Discord, that way the bot doesn't try to make new objects, since there is already one for every Discord User with saved client.
+  - Once the main bot is done connecting to IRC it loops through the objects and uses connect() on all of them.
+
 # July 20th 2023
 
 - When a Discord user changes their status from online to Idle, Dnd or offline, it will be set as their away message on IRC

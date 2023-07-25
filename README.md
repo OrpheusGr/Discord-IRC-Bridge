@@ -38,13 +38,18 @@ https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permission
 - The following commands are provided:
   - !kill command to disconnect someone's client (only for botops)
   - Change your IRC client's nick with !nick (can be disabled)
-  - IRC users can mention Discord users just by typing the nick of their IRC client.
   - !fjoinirc make an IRC client for another Discord user (only for botops)
   - !fnick change a Discord user's IRC nick (only for botops)
   - !whois shows another Discord user's IRC nick (only for botops)
   - !whoami shows the sender's IRC nick
   - !shutdown to kill the bot. (only for botops) (works on IRC too)  
   - !relayhelp for usage of any of the above commands
+
+## Known bugs:
+
+- The bot currently fails to convert Discord italics to IRC italics. The bot itself does the replacement just fine but the irc library encodes the message and somehow the italics character is stripped. 
+  - I don't know how to fix this and i'm currently waiting on a reply from the library's maintainers in order to solve this.
+
 
 ## Setting up and running 
 - Before starting the bot you need to `python3 setupwizard.py` to make a config file for the bot.

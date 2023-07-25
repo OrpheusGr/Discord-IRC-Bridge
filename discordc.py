@@ -10,9 +10,6 @@ import settings
 import helpreplies
 import sys
 import random
-global botlist
-botlist = []
-global condict
 condict = {}
 channel = ""
 killed = {}
@@ -22,10 +19,13 @@ shutting_down = 0
 msg_counter = 0
 msg_time = 0
 msg_cooldown = 0
+savedclients = {}
 
 # Load the config
 def load_the_config():
+    global savedclients
     config = settings.load_config()
+    savedclients = settings.load_saved_clients()
     if config == False:
         sys.exit(0)
     else:
@@ -75,17 +75,18 @@ def ircdressup(m):
         if msplit[i].startswith("http") or msplit[i].startswith("<http"):
             msplit[i] = msplit[i].replace("_", "underdashreplacementplaceholderdiscordbotregexsucks")
     m = " ".join(msplit)
-    m = dressup_replace(m, "***", chr(29) + "\x02")
+    m = dressup_replace(m, "***", "\x1d" + "\x02")
     m = dressup_replace(m, "**", "\x02")
-    m = dressup_replace(m, "*", chr(29))
+    m = dressup_replace(m, "*", "\x1d")
     m = dressup_replace(m, "```", "")
-    m = dressup_replace(m, "_", chr(29))
+    m = dressup_replace(m, "_", "\x1d")
     m = m.replace("underdashreplacementplaceholderdiscordbotregexsucks", "_")
     return m
 
 def dressup_replace(m, substr, replacement):
-    if m.count(substr) % 2 == 0:
-        m = m.replace(substr, replacement)
+    if m.count(substr) == 1:
+        return m
+    m = m.replace(substr, replacement)
     return m
 
 def get_reference(r, p, a):
@@ -173,11 +174,7 @@ async def send_my_message_async(message):
 def is_member(id):
     guild = client.get_guild(int(DISCORDSERVER))
     member = guild.get_member(int(id))
-    if member == None:
-        return False
-    else:
-        return True
-
+    return member
 
 async def setstatus_async(a):
     if AUTOCLIENTS != True:
@@ -188,6 +185,26 @@ async def setstatus_async(a):
 
 async def shutdown_async():
     await client.close()
+
+@client.event
+async def on_message_edit(before, after):
+    global channel
+    global condict
+    # Certain conditions on which we don't want the bot to act
+    if before.author == client.user:
+        return
+    if before.channel != channel:
+        return
+    if shutting_down == 1:
+        return
+
+    authorid = str(before.author.id)
+    beforecontent = replace_emojis(before.clean_content.replace("\n", " ").strip())
+    aftercontent = replace_emojis(after.clean_content.replace("\n", " ").strip())
+
+    if authorid in condict:
+        if beforecontent != aftercontent:
+            condict[authorid].sendmsg("EDIT: " + ircdressup(aftercontent))
 
 @client.event
 async def on_presence_update(before, after):
@@ -210,7 +227,8 @@ async def on_message(message):
     checknick = False
     ref = ""
     msgrefpin = False
-    # Don't reply to itself or to the webhook or if the channel is not the one in settings
+    action_msg = False
+    # Certain conditions on which we don't want the bot to act
     if str(message.webhook_id) == whid:
         return
     if message.author == client.user:
@@ -231,6 +249,8 @@ async def on_message(message):
     authorid = str(message.author.id)
     content = replace_emojis(message.clean_content.replace("\n", " ").strip())
     contentsplit = content.split()
+    if contentsplit[0].startswith("_") == True and contentsplit[len(contentsplit)-1].endswith("_") == True:
+        action_msg = True
 
     idarg = ""
     idarg_user = ""
@@ -257,7 +277,7 @@ async def on_message(message):
             content = urls
         else:
             content = content + urls
-    if content == "":
+    if content == "" and msgrefpin == False:
         print("Stickers/embed are not seen by discord.py")
         return
     content = ref + content
@@ -528,7 +548,10 @@ async def on_message(message):
 
     #public commands close block
     if authorid in condict:
-        condict[authorid].sendmsg(ircdressup(content))
+        if action_msg == False:
+            condict[authorid].sendmsg(ircdressup(content))
+        else:
+            condict[authorid].sendmsg(ircdressup(content), True)
 
 
     with thread_lock:
@@ -541,6 +564,8 @@ def run():
 async def on_ready():
     global channel
     global thread_lock
+    global condict
+    global savedclients
 
     with thread_lock:
         print("[Discord] Logged in as:")
@@ -597,3 +622,10 @@ async def on_ready():
             return
 
         channel = findChannel[0]
+    if savedclients != {}:
+        for savedclient in savedclients:
+            time.sleep(3)
+            checkmember = is_member(savedclient)
+            if checkmember != None:
+                newclient = classcon.IRCbots(savedclients[savedclient], IRCSERVER, IRCPORT, IRCCHAN, None, False, savedclient)
+                condict[savedclient] = newclient

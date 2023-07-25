@@ -4,7 +4,7 @@ import time
 import re
 import settings
 reactor = irc.client.Reactor()
-irc.client.ServerConnection.buffer_class.encoding = "UTF-8"
+irc.client.ServerConnection.buffer_class.encoding = "utf-8"
 irc.client.ServerConnection.buffer_class.errors = "replace"
 loopin = 0
 botdict = {}
@@ -41,6 +41,7 @@ def startloop(nick, server, prt, ch, wh):
     momobj = IRCbots(nick, server, prt, ch, True, wh)
     mom = momobj.conn
     set_chan(ch, wh)
+    time.sleep(15)
     momobj.connect()
     global loopin
     loopin = 1
@@ -160,8 +161,16 @@ def on_connectbot(connection, event):
     disconnectretries = 0
     if connection != mom:
         botdict[connection.get_nickname()] = connection.discordid
+        member = discord.is_member(connection.discordid)
+        if member != None:
+            raw_status = member.raw_status
+            if raw_status != "online":
+                ucon = discord.condict[connection.discordid]
+                ucon.set_away("Discord Status: " + raw_status)
     elif connection == mom:
         print("[IRC] Successful connection to", event.source)
+        for client in discord.condict:
+            discord.condict[client].connect()
         time.sleep(2)
         discord.setstatus()
     connection.join(channel)
@@ -249,15 +258,17 @@ def on_join(connection, event):
         else:
             joinmsg = "**Relay is up!**"
         discord.send_my_message(joinmsg)
+        '''
         if savedclients != {}:
             for client in savedclients:
                 time.sleep(3)
                 checkmember = discord.is_member(client)
-                if checkmember == True:
+                if checkmember != None:
                     newclient = IRCbots(savedclients[client], IRCSERVER, IRCPORT, IRCCHAN, None, False, client)
                     newclientcon = newclient.conn
                     discord.condict[client] = newclient
                     newclient.connect()
+        '''
 
 def on_part(connection, event):
     if event.target != channel:
@@ -411,7 +422,7 @@ class IRCbots():
     def sent_quit_on(self):
         self.sent_quit = 1
 
-    def sendmsg(self, msg):
+    def sendmsg(self, msg, action=False):
         if self.conn.is_connected() == False:
             return
         msg = split_msg(msg, 512-len(self.myprivmsg_line))
@@ -420,7 +431,10 @@ class IRCbots():
             self.delay_msg += 0.5
             time.sleep(self.delay_msg)
             joint = msg[i][0]
-            self.conn.privmsg(channel, joint)
+            if action == False:
+                self.conn.privmsg(channel, joint)
+            else:
+                self.conn.action(channel, joint)
         self.lastmsg = round(time.time(),0)
         self.delay_msg = 0
 
