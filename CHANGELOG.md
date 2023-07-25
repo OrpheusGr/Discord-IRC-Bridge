@@ -1,4 +1,7 @@
-# Undefined future update
+# July 26 2023
+- hotfix for a lil bug
+
+# July 25 2023
 
 - Added the relaying of message edits to IRC. 
   - When a Discord user that has an IRC client edits one of their Discord messages it will be shown on IRC as: ```EDIT: their post-edit message will be here```

@@ -249,7 +249,7 @@ async def on_message(message):
     authorid = str(message.author.id)
     content = replace_emojis(message.clean_content.replace("\n", " ").strip())
     contentsplit = content.split()
-    if contentsplit[0].startswith("_") == True and contentsplit[len(contentsplit)-1].endswith("_") == True:
+    if len(contentsplit) > 0 and contentsplit[0].startswith("_") == True and contentsplit[len(contentsplit)-1].endswith("_") == True:
         action_msg = True
 
     idarg = ""
