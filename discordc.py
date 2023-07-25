@@ -624,7 +624,6 @@ async def on_ready():
         channel = findChannel[0]
     if savedclients != {}:
         for savedclient in savedclients:
-            time.sleep(3)
             checkmember = is_member(savedclient)
             if checkmember != None:
                 newclient = classcon.IRCbots(savedclients[savedclient], IRCSERVER, IRCPORT, IRCCHAN, None, False, savedclient)
