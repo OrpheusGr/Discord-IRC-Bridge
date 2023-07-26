@@ -35,6 +35,7 @@ https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permission
 - IRC users can mention Discord users just by typing the nick of their IRC client.
 - Auto Disconnecting of IRC clients after a time limit that you can set. (can be disabled)
 - The IRC clients that are created are saved and will reconnect if you restart the bot.
+- IRC color codes such as bold and italics are converted to Discord equivalents and vice versa.
 - The following commands are provided:
   - !kill command to disconnect someone's client (only for botops)
   - Change your IRC client's nick with !nick (can be disabled)
@@ -44,11 +45,6 @@ https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permission
   - !whoami shows the sender's IRC nick
   - !shutdown to kill the bot. (only for botops) (works on IRC too)  
   - !relayhelp for usage of any of the above commands
-
-## Known bugs:
-
-- The bot currently fails to convert Discord italics to IRC italics. The bot itself does the replacement just fine but the irc library encodes the message and somehow the italics character is stripped. 
-  - I don't know how to fix this and i'm currently waiting on a reply from the library's maintainers in order to solve this.
 
 
 ## Setting up and running 

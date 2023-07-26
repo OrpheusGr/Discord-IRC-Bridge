@@ -1,5 +1,6 @@
 # July 26 2023
 - hotfix for a lil bug
+- fixed italics not being shown on IRC messages
 
 # July 25 2023
 

@@ -125,7 +125,7 @@ def IrcToDiscText(message):
 def split_msg(msg, max_chars):
     piece = ""
     all_pieces = []
-    msgsplit = msg.split()
+    msgsplit = re.split('\s+(?=\x1d)', msg)
     if len(msgsplit) == 1 and len(msgsplit[0]) > max_chars:
         msgsplit = [msgsplit[0][0:max_chars], msgsplit[0][max_chars:]]
     i = 0
@@ -423,9 +423,11 @@ class IRCbots():
         self.sent_quit = 1
 
     def sendmsg(self, msg, action=False):
+        print(msg, repr(msg))
         if self.conn.is_connected() == False:
             return
         msg = split_msg(msg, 512-len(self.myprivmsg_line))
+        print(msg[0][0], repr(msg[0][0]))
         self.delay_msg = 0
         for i in range(len(msg)):
             self.delay_msg += 0.5
