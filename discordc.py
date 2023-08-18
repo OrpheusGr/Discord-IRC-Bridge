@@ -1,4 +1,4 @@
-# Imports
+5 # Imports
 import discord
 import asyncio
 import re
@@ -11,7 +11,6 @@ import helpreplies
 import sys
 import random
 condict = {}
-channel = ""
 killed = {}
 leftirc = {}
 help = helpreplies.help
@@ -20,6 +19,8 @@ msg_counter = 0
 msg_time = 0
 msg_cooldown = 0
 savedclients = {}
+mymessages = ""
+channel_sets = {}
 
 # Load the config
 def load_the_config():
@@ -42,12 +43,13 @@ Intents.messages = True
 Intents.presences = True
 client = discord.Client(intents=Intents)
 
-whid = WEBHOOK.split("/")[5]
-
 def get_urls(attach):
     urls = ""
+    add = ""
     for i in range(len(attach)):
-        urls += " | <" + attach[i].url + ">"
+        urls += add + "<" + attach[i].url + ">"
+        if add == "":
+            add = " | "
     return urls
 
 def set_classcon(con):
@@ -65,9 +67,9 @@ def fixnick(nick):
     else:
         return new_nick
 
-def senduptime():
+def senduptime(discord_chan, irc_chan):
     time = classcon.get_uptime()
-    classcon.sendtoboth("I've been running for " + time)
+    classcon.sendtoboth(discord_chan, irc_chan, "I've been running for " + time)
 
 def ircdressup(m):
     msplit = m.split()
@@ -125,20 +127,24 @@ def replace_emojis(content):
 def setstatus():
     asyncio.run_coroutine_threadsafe(setstatus_async(1), client.loop)
 
-def send_my_message(message):
+def send_my_message(discord_chan, message):
     global client
-    asyncio.run_coroutine_threadsafe(send_my_message_async(message), client.loop)
+    asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, message), client.loop)
 
-def shutdown(msgornot=0, author=" ", irc="on Discord"):
+def send_to_all(message):
+    for item in channel_sets:
+        send_my_message(channel_sets[item]["real_chan"], message)
+
+def shutdown(reason=""):
     global shutting_down
     shutting_down = 1
-    uptime = classcon.get_uptime()
-    if msgornot == 1:
-        send_my_message("**Shutdown request by " + author + ". I was alive for " + uptime + "**")
     sleeptime = (len(condict) * 0.5) + 5
     quitall("Bridge shutting down")
     classcon.momobj.sent_quit_on()
-    classcon.mom.disconnect("It was " + author + " " + irc + ", they pressed the red button! Agh! *dead* I was alive for " + uptime)
+    uptime = classcon.get_uptime()
+    if reason != "":
+        reason = "Reason: " +  reason
+    classcon.mom.disconnect("Bridge is shutting down after running for " + uptime + " " + reason)
     die()
 
 def die():
@@ -153,8 +159,7 @@ def quitall(reason):
         con.disconnect(reason)
         time.sleep(0.5)
 
-async def send_my_message_async(message):
-    global channel
+async def send_my_message_async(discord_chan, message):
     global msg_counter
     global msg_time
     global msg_cooldown
@@ -168,8 +173,7 @@ async def send_my_message_async(message):
     else:
          msg_cooldown = 0
     msg_time = ctime
-    await channel.send(message.strip())
-
+    await discord_chan.send(message.strip())
 
 def is_member(id):
     guild = client.get_guild(int(DISCORDSERVER))
@@ -184,6 +188,7 @@ async def setstatus_async(a):
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=status))
 
 async def shutdown_async():
+    await asyncio.sleep(2)
     await client.close()
 
 @client.event
@@ -193,18 +198,18 @@ async def on_message_edit(before, after):
     # Certain conditions on which we don't want the bot to act
     if before.author == client.user:
         return
-    if before.channel != channel:
+    if str(before.channel.id) not in channel_sets:
         return
     if shutting_down == 1:
         return
-
+    irc_chan = channel_sets[str(before.channel.id)]["irc_chan"]
     authorid = str(before.author.id)
     beforecontent = replace_emojis(before.clean_content.replace("\n", " ").strip())
     aftercontent = replace_emojis(after.clean_content.replace("\n", " ").strip())
 
     if authorid in condict:
         if beforecontent != aftercontent:
-            condict[authorid].sendmsg("EDIT: " + ircdressup(aftercontent))
+            condict[authorid].sendmsg(irc_chan, "EDIT: " + ircdressup(aftercontent))
 
 @client.event
 async def on_presence_update(before, after):
@@ -222,35 +227,48 @@ async def on_presence_update(before, after):
 async def on_message(message):
     global thread_lock
     global condict
-    global channel
     global leftirc
     checknick = False
     ref = ""
     msgrefpin = False
     action_msg = False
     # Certain conditions on which we don't want the bot to act
-    if str(message.webhook_id) == whid:
-        return
     if message.author == client.user:
         return
-    if message.channel != channel:
+    if str(message.channel.id) not in channel_sets:
         return
+    channel_id = str(message.channel.id)
+    whid = channel_sets[channel_id]["webhook"].split("/")[5]
     if shutting_down == 1:
         return
+
+    irc_chan = channel_sets[channel_id]["irc_chan"]
+    # Detect if a message was pinned
 
     if message.type == discord.MessageType.pins_add:
         msgrefpin = True
 
+    # Detect if the message is a reply to another message and fetch the old message content
+
     if message.reference:
         refid = message.reference.message_id
-        refinfo = await channel.fetch_message(refid)
+        refinfo = await message.channel.fetch_message(refid)
         ref = get_reference(refinfo, msgrefpin, message.author.name)
 
     authorid = str(message.author.id)
     content = replace_emojis(message.clean_content.replace("\n", " ").strip())
     contentsplit = content.split()
+
+    # Detect if the message is in italics (usually when /me is used)
+
     if len(contentsplit) > 0 and contentsplit[0].startswith("_") == True and contentsplit[len(contentsplit)-1].endswith("_") == True:
         action_msg = True
+
+    # Detect if the second word is a mention and replace the spaces of the mention with a dash
+    # This is done for commands that take a mention as an argument
+    # (if the username contains spaces it is split into diff items
+    # So we use the raw mention, we get the user's id, and with that their username or nick
+    # Then we replace the spaces with underdashes.
 
     idarg = ""
     idarg_user = ""
@@ -301,7 +319,7 @@ async def on_message(message):
                     checknick = fixnick(message.author.nick.replace(" ", "_"))
                 else:
                     checknick = "DiscordUser_" + str(random.randomint(100,9999))
-            newclient = classcon.IRCbots(checknick + "[R]", IRCSERVER, IRCPORT, IRCCHAN, None, False, authorid)
+            newclient = classcon.IRCbots(checknick + "[R]", IRCSERVER, IRCPORT, None, False, authorid)
             newclientcon = newclient.conn
             condict[authorid] = newclient
             newclient.connect()
@@ -311,11 +329,11 @@ async def on_message(message):
         #kill command - Kills (sends a quit message) a user's client by force (used for moderation)
         if cmd == "!kill":
             if len(contentsplit) == 1 or idarg == "":
-                send_my_message("Usage: !kill @mention_here")
+                send_my_message(message.channel, "Usage: !kill @mention_here")
                 return
             killid = idarg
             if killid not in condict:
-                send_my_message("That user doesn't have a connected IRC client.")
+                send_my_message(message.channel, "That user doesn't have a connected IRC client.")
                 return
             reason = ""
             if "--delete" in contentsplit:
@@ -331,21 +349,26 @@ async def on_message(message):
             tobekilled.disconnect("Client killed by " + message.author.name + reason)
             return
 
-        #shutdown command -  Quits IRC, kills Discord bot, stops process.
-        elif cmd == "!shutdown":
-            shutdown(1, message.author.name)
+        #bridgeshutdown command -  Quits IRC, kills Discord bot, stops process.
+        elif cmd == "!bridgeshutdown":
+            uptime = classcon.get_uptime()
+            reason = ""
+            if len(contentsplit) > 1:
+                reason = "Reason: " + ' '.join(contentsplit[1:])
+            send_to_all("Bridge shutting down after running for " + uptime + " " + reason)
+            shutdown(reason)
             return
 
         #fjoinirc command - Makes a client for another user
         elif cmd == "!fjoinirc":
             if idarg == "":
-                send_my_message("You need to mention the user you want to forcejoin")
+                send_my_message(message.channel, "You need to mention the user you want to forcejoin")
                 return
             if idarg in condict:
-                send_my_message("The user you provided has already joined IRC")
+                send_my_message(message.channel, "The user you provided has already joined IRC")
                 return
             if classcon.mom.is_connected() == False:
-                send_my_message("Central bot is currently disconnected from IRC, please wait and try again.")
+                send_my_message(message.channel, "Central bot is currently disconnected from IRC, please wait and try again.")
                 return
 
             if "--nick" in contentsplit:
@@ -369,10 +392,10 @@ async def on_message(message):
                  else:
                      checknick = fixnick(idarg_name)
             if checknick == False:
-                 send_my_message("The nickname you provided is invalid. IRC nicks must be A-Z a-z 0-9")
+                 send_my_message(message.channel, "The nickname you provided is invalid. IRC nicks must be A-Z a-z 0-9")
                  return
 
-            newclient = classcon.IRCbots(checknick + "[R]", IRCSERVER, IRCPORT, IRCCHAN, None, False, idarg)
+            newclient = classcon.IRCbots(checknick + "[R]", IRCSERVER, IRCPORT, None, False, idarg)
             newclientcon = newclient.conn
             condict[idarg] = newclient
             newclient.connect()
@@ -383,22 +406,22 @@ async def on_message(message):
         #fnick command - Forcefully changes a Discord user's IRC nick (used for moderation)
         elif cmd == "!fnick":
             if idarg == "":
-                 send_my_message("You need to mention the user whose nick you want to change.")
+                 send_my_message(message.channel, "You need to mention the user whose nick you want to change.")
                  return
             if idarg not in condict:
-                 send_my_message("That user doesn't have a client. Did you mean !fjoinirc ?")
+                 send_my_message(message.channel, "That user doesn't have a client. Did you mean !fjoinirc ?")
                  return
             if len(contentsplit) < 3:
-                 send_my_message("Usage: !fnick @mention_here new_nick_here")
+                 send_my_message(message.channel, "Usage: !fnick @mention_here new_nick_here")
                  return
             urequest = contentsplit[2]
             ucon = condict[idarg].conn
             uconick = ucon.get_nickname()
             if urequest == uconick or urequest + "[R]" == uconick:
-                send_my_message("User is already using " + urequest + " (" + uconick + ") on IRC.")
+                send_my_message(message.channel, "User is already using " + urequest + " (" + uconick + ") on IRC.")
                 return
             if urequest + "[R]" in classcon.botdict or urequest + "[R]_" in classcon.botdict or urequest in classcon.botdict:
-                send_my_message("Another Discord User is using a simular/the same nick, please choose another one to avoid confusion.")
+                send_my_message(message.channel, "Another Discord User is using a simular/the same nick, please choose another one to avoid confusion.")
                 return
             ucon.nick(urequest + "[R]")
             classcon.savedclients.pop(idarg)
@@ -409,17 +432,17 @@ async def on_message(message):
         #whois command - Shows what nick a Discord user is using on IRC (used for moderation)
         elif cmd == "!whois":
             if idarg == "":
-                send_my_message("You need to mention a user.")
+                send_my_message(message.channel, "You need to mention a user.")
                 return
             if idarg not in condict:
                 if idarg in classcon.savedclients:
-                    send_my_message("This user doesn't have a connected client at the moment, but the nick i have saved for them is: " + classcon.savedclients[idarg])
+                    send_my_message(message.channel, "This user doesn't have a connected client at the moment, but the nick i have saved for them is: " + classcon.savedclients[idarg])
                     return
                 else:
-                    send_my_message("This user doesn't have a connected client and there's no saved client for them")
+                    send_my_message(message.channel, "This user doesn't have a connected client and there's no saved client for them")
                     return
             else:
-                send_my_message("This user's IRC nick is: " + str(classcon.find_nick_by_id(idarg)))
+                send_my_message(message.channel, "This user's IRC nick is: " + str(classcon.find_nick_by_id(idarg)))
                 return
 
     #public commands block
@@ -432,11 +455,11 @@ async def on_message(message):
             if message.author.nick:
                 usenick = message.author.nick.replace(" ", "_")
         if classcon.mom.is_connected() == False:
-            send_my_message("Central bot is currently disconnected from IRC, please wait and try again.")
+            send_my_message(message.channel, "Central bot is currently disconnected from IRC, please wait and try again.")
             return
 
         if authorid in condict:
-            send_my_message("**Error**: You already have a client connected to IRC, your messages are being relayed!")
+            send_my_message(message.channel, "**Error**: You already have a client connected to IRC, your messages are being sent to IRC through it!")
             return
 
         if authorid in killed:
@@ -447,7 +470,7 @@ async def on_message(message):
                     killtimeleft = "Permanent"
                 else:
                     killtimeleft = TIMEKILLED - timediff
-                send_my_message("Your client has been killed by a botop (" + str(killtimeleft) + " secs left)")
+                send_my_message(message.channel, "Your client has been killed by a botop (" + str(killtimeleft) + " secs left)")
                 return
             else:
                 killed.pop(authorid)
@@ -462,14 +485,14 @@ async def on_message(message):
                 checknick = fixnick(usenick)
 
         if checknick == False:
-            send_my_message("**Error**: Your IRC nick can only contain A-Z a-z 0-9, your current username or requested nick cannot be used!")
+            send_my_message(message.channel, "**Error**: Your IRC nick can only contain A-Z a-z 0-9, your current username or requested nick cannot be used!")
             return
         if checknick + "[R]" in classcon.botdict or checknick + "_[R]" in classcon.botdict or checknick in classcon.botdict:
-            send_my_message("**Error**: Another Discord User is using this nick, please provide another to avoid confusion with simular nicks.")
+            send_my_message(message.channel, "**Error**: Another Discord User is using this nick, please provide another to avoid confusion with simular nicks.")
             return
 
         if authorid not in condict:
-            newclient = classcon.IRCbots(checknick + "[R]", IRCSERVER, IRCPORT, IRCCHAN, None, False, authorid)
+            newclient = classcon.IRCbots(checknick + "[R]", IRCSERVER, IRCPORT, None, False, authorid)
             newclientcon = newclient.conn
             condict[authorid] = newclient
             newclient.connect()
@@ -477,25 +500,25 @@ async def on_message(message):
                 leftirc.pop(authorid)
             return
 
-    #relayuptime commmand - Simply sends the bot's uptime to Discord and IRC.
-    elif cmd == "!relayuptime":
-        senduptime()
+    #bridgeuptime commmand - Simply sends the bot's uptime to Discord and IRC.
+    elif cmd == "!bridgeuptime":
+        senduptime(message.channel, irc_chan)
         return
 
-    elif cmd == "!relayhelp":
+    elif cmd == "!bridgehelp":
         if len(contentsplit) == 1:
-            send_my_message(help["listcommands"])
+            send_my_message(message.channel, help["listcommands"])
         else:
             if contentsplit[1] in help:
-                send_my_message(help[contentsplit[1]])
+                send_my_message(message.channel, help[contentsplit[1]])
             else:
-                send_my_message("Invalid parameter. Use '!relayhelp listcommands' to see a list of commands you can get help for.")
+                send_my_message(message.channel, "Invalid parameter. Use '!bridgehelp listcommands' to see a list of commands you can get help for.")
         return
 
     #leaveirc command - Disconnects the user's client from IRC, to get it back they must user !joinirc (wether AUTOCLIENTS is on or off)
     elif cmd == "!leaveirc":
         if authorid not in condict:
-            send_my_message("You don't have a client connected. Did you mean: !joinirc ? :smirk:")
+            send_my_message(message.channel, "You don't have a client connected. Did you mean: !joinirc ? :smirk:")
             return
         if "--delete" in contentsplit:
             contentsplit.remove("--delete")
@@ -515,19 +538,19 @@ async def on_message(message):
         if NICKCHANGE == False:
             return
         if authorid not in condict:
-            send_my_message("You don't have a client connected. Did you mean: !joinirc")
+            send_my_message(message.channel, "You don't have a client connected. Did you mean: !joinirc")
             return
         if len(contentsplit) == 1:
-            send_my_message("Usage: !nick <nickhere>")
+            send_my_message(message.channel, "Usage: !nick <nickhere>")
             return
         urequest = contentsplit[1]
         ucon = condict[authorid].conn
         uconick = ucon.get_nickname()
         if urequest == uconick or urequest + "[R]" == uconick:
-            send_my_message("You are already using " + urequest + " (" + uconick + ") on IRC.")
+            send_my_message(message.channel, "You are already using " + urequest + " (" + uconick + ") on IRC.")
             return
         if urequest + "[R]" in classcon.botdict or urequest + "[R]_" in classcon.botdict or urequest in classcon.botdict:
-            send_my_message("Another Discord User is using a simular/the same nick, please choose another one to avoid confusion")
+            send_my_message(message.channel, "Another Discord User is using a simular/the same nick, please choose another one to avoid confusion")
             return
         ucon.nick(urequest + "[R]")
         classcon.savedclients[authorid] = urequest + "[R]"
@@ -538,20 +561,20 @@ async def on_message(message):
     elif cmd == "!whoami":
         if authorid not in condict:
             if authorid in classcon.savedclients:
-                send_my_message("You don't have a connected client at the moment, but the nick i have saved for you is: " + classcon.savedclients[authorid])
+                send_my_message(message.channel, "You don't have a connected client at the moment, but the nick i have saved for you is: " + classcon.savedclients[authorid])
                 return
             else:
-                send_my_message("You don't have a connected client and there's no saved client for you.")
+                send_my_message(message.channel, "You don't have a connected client and there's no saved client for you.")
                 return
-        send_my_message("Your IRC nick is: " + str(classcon.find_nick_by_id(authorid)))
+        send_my_message(message.channel, "Your IRC nick is: " + str(classcon.find_nick_by_id(authorid)))
         return
 
     #public commands close block
     if authorid in condict:
         if action_msg == False:
-            condict[authorid].sendmsg(ircdressup(content))
+            condict[authorid].sendmsg(irc_chan, ircdressup(content))
         else:
-            condict[authorid].sendmsg(ircdressup(content), True)
+            condict[authorid].sendmsg(irc_chan, ircdressup(content), True)
 
 
     with thread_lock:
@@ -562,7 +585,7 @@ def run():
 
 @client.event
 async def on_ready():
-    global channel
+    global channel_sets
     global thread_lock
     global condict
     global savedclients
@@ -598,9 +621,9 @@ async def on_ready():
 
         server = findServer[0]
 
-        if DISCORDCHAN == "":
-            print("[Discord] You have not configured a channel to use. Run python3 setupwizard.py")
-            print("[Discord] Please put one of the channel IDs listed below when asked for channel ID")
+        if channel_sets == {}:
+            print("[Discord] You have not configured any channels sets. Please run python3 setupwizard.py")
+            print("[Discord] Input one of the channel IDs listed below when asked for channel ID")
             for channel in server.channels:
                 if channel.type == discord.ChannelType.text:
                     print("[Discord] %s: %s" % (channel.name, channel.id))
@@ -608,23 +631,25 @@ async def on_ready():
             await client.close()
             return
 
-        findChannel = [x for x in server.channels if str(x.id) == DISCORDCHAN and x.type == discord.ChannelType.text]
-        if not len(findChannel):
-            print("[Discord] No channel could be found with the specified id: " + DISCORDSERVER)
-            print("[Discord] Note that you can only use text channels.")
-            print("[Discord] Available channels:")
+        for item in channel_sets:
+            findChannel = [x for x in server.channels if str(x.id) == item and x.type == discord.ChannelType.text]
+            if not len(findChannel):
+                print("[Discord] No channel could be found with the specified id: " + item)
+                print("[Discord] Note that you can only use text channels.")
+                print("[Discord] Available channels:")
 
-            for channel in server.channels:
-                if channel.type == discord.ChannelType.text:
-                    print("[Discord] %s: %s" % (channel.name, channel.id))
+                for channel in server.channels:
+                    if channel.type == discord.ChannelType.text:
+                        print("[Discord] %s: %s" % (channel.name, channel.id))
 
-            await client.close()
-            return
-
-        channel = findChannel[0]
+                print("You can edit this channel set by running setupwizard.py")
+                await client.close()
+                return
+            channel_sets[item]["real_chan"] = findChannel[0]
+    classcon.set_channel_sets(channel_sets)
     if savedclients != {}:
         for savedclient in savedclients:
             checkmember = is_member(savedclient)
             if checkmember != None:
-                newclient = classcon.IRCbots(savedclients[savedclient], IRCSERVER, IRCPORT, IRCCHAN, None, False, savedclient)
+                newclient = classcon.IRCbots(savedclients[savedclient], IRCSERVER, IRCPORT, None, False, savedclient)
                 condict[savedclient] = newclient

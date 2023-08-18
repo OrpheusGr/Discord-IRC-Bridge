@@ -1,3 +1,14 @@
+# August 18 2023
+- Leaving the "Relay" term behind since this acts a lot more like a "Bridge" between IRC and Discord. Not just relaying in text e.g <john> hi there
+- Added multi-channel support
+  - You can now have the Bridge work in multiple combinations of IRC and Discord Channels
+  - In case you were using the bot before this update, your discord channel, irc channel and webhook values will bw converted to the new format and the bot will work as before
+  - To edit/add/delete channel sets use the setupwizard.py
+- Changed !relayhelp to !bridgehelp
+- Changed !shutdown to !bridgeshutdown and added a reason argument
+- Changed !relayuptime to !bridgeuptime
+- Fixed some slight color bugs in setupwizard.py
+
 # July 26 2023
 - hotfix for a lil bug
 - fixed italics not being shown on IRC messages

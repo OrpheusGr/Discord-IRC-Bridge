@@ -31,6 +31,12 @@ def load_config():
                 config[item] = default_values[item]
         if missing == 1:
             save_config()
+        if "DISCORDCHAN" in config and "IRCCHAN" in config and "WEBHOOK" in config:
+            config["channel_sets"] = {config["DISCORDCHAN"]: {"webhook": config["WEBHOOK"], "irc_chan": config["IRCCHAN"]}}
+            config.pop("DISCORDCHAN")
+            config.pop("IRCCHAN")
+            config.pop("WEBHOOK")
+            save_config()
         return config
 
 def load_saved_clients():

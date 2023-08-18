@@ -11,7 +11,7 @@ discordc.set_classcon(classcon)
 classcon.set_thread_lock(thread_lock)
 discordc.set_thread_lock(thread_lock)
 
-t1 = threading.Thread(target=classcon.startloop, args=(discordc.IRCNICK, discordc.IRCSERVER, discordc.IRCPORT, discordc.IRCCHAN, discordc.WEBHOOK))
+t1 = threading.Thread(target=classcon.startloop, args=(discordc.IRCNICK, discordc.IRCSERVER, discordc.IRCPORT))
 t1.daemon = True
 t1.start()
 
