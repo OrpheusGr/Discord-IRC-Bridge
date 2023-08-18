@@ -463,6 +463,7 @@ class IRCbots():
         #print(msg, repr(msg))
         if self.conn.is_connected() == False:
             return
+        print(self.myprivmsg_line)
         msg = split_msg(msg, 512-len(self.myprivmsg_line[channel]))
         #print(msg[0][0], repr(msg[0][0]))
         self.delay_msg = 0
