@@ -239,6 +239,8 @@ async def on_message(message):
         return
     channel_id = str(message.channel.id)
     whid = channel_sets[channel_id]["webhook"].split("/")[5]
+    if str(message.webhook_id) == whid:
+        return
     if shutting_down == 1:
         return
 
