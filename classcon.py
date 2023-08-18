@@ -312,7 +312,7 @@ def on_quit(connection, event):
                     reason = "(" + event.arguments[0] + ")"
                 else:
                     reason = ""
-                discord.send_my_message(channel_sets[each_channel]["real_chan"],"<- **" + event.source.nick + " quit " + network + " " + reason + "**")
+                discord.send_my_message(channel_sets[each_channel]["real_chan"], "<- **" + event.source.nick + " quit " + network + " " + reason + "**")
             channels_lists[each_channel].pop(event.source.nick)
     #print(channels_lists)
     if event.arguments[0]:
@@ -388,7 +388,7 @@ def on_disconnect(connection, event):
         global disconnectretries
         disconnectretries += 1
         if disconnectretries == 3:
-             discord.send_my_message("Retried  3 times, cannot connect to " + event.source + " " + event.arguments[0] + " Closing process.")
+             discord.send_to_all("Retried  3 times, cannot connect to " + event.source + " " + event.arguments[0] + " Closing process.")
              time.sleep(1)
              discord.shutdown()
              stoploop()
@@ -396,7 +396,7 @@ def on_disconnect(connection, event):
         connection.reconnect()
         return
     if connection.sent_quit != 1:
-        discord.send_my_message("<@" + connection.discordid + ">" + " Unexpectedly disconnected from " + event.source + " " + event.arguments[0])
+        discord.send_to_all("<@" + connection.discordid + ">" + " Unexpectedly disconnected from " + event.source + " " + event.arguments[0])
     if connection.discordid in discord.condict:
         obj = discord.condict[connection.discordid]
         del obj
