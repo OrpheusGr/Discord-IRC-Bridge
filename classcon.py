@@ -179,7 +179,6 @@ def on_connectbot(connection, event):
         print("[IRC] Successful connection to", event.source)
         for client in discord.condict:
             discord.condict[client].connect()
-        time.sleep(2)
         discord.setstatus()
     for item in channel_sets:
         connection.join(item)
@@ -335,11 +334,9 @@ def on_kick(connection, event):
             extras = ""
         discord.send_my_message(discord_chan, "**%s kicked %s %s**" % (nick, knick, extras))
         if knick == connection.get_nickname():
-             time.sleep(2)
              connection.join(event.target)
     else:
         if knick == connection.get_nickname():
-            time.sleep(2)
             connection.join(event.target)
 
 def on_featurelist(connection, event):
