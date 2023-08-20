@@ -336,11 +336,11 @@ def on_kick(connection, event):
         discord.send_my_message(discord_chan, "**%s kicked %s %s**" % (nick, knick, extras))
         if knick == connection.get_nickname():
              time.sleep(2)
-             connection.join(channel)
+             connection.join(event.target)
     else:
         if knick == connection.get_nickname():
             time.sleep(2)
-            connection.join(channel)
+            connection.join(event.target)
 
 def on_featurelist(connection, event):
     if connection != mom:
