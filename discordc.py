@@ -91,7 +91,7 @@ def dressup_replace(m, substr, replacement):
     m = m.replace(substr, replacement)
     return m
 
-def get_reference(r, p, a):
+def get_reference(r, p, a, whid):
     rid = r.author.id
     ircnick = classcon.find_nick_by_id(str(rid))
     if ircnick == False:
@@ -255,7 +255,7 @@ async def on_message(message):
     if message.reference:
         refid = message.reference.message_id
         refinfo = await message.channel.fetch_message(refid)
-        ref = get_reference(refinfo, msgrefpin, message.author.name)
+        ref = get_reference(refinfo, msgrefpin, message.author.name, whid)
 
     authorid = str(message.author.id)
     content = replace_emojis(message.clean_content.replace("\n", " ").strip())
