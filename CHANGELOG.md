@@ -1,5 +1,17 @@
+# August 30 2023
+- Added a command cooldown system 
+  - When a Discord user uses a command, a 10 second cooldown is enabled for them for this command
+  - If a Discord user has an active cooldown for 3 commands a global cooldown is enabled for them
+  - The global cooldown last 60 seconds and the user cannot use any commands.
+  - When a user is in any cooldown and uses a/the command again a clock emoji reaction is added to their message
+- Added a new module, thetimers.py, this is an easier way for me to add delays to stuff, tsking advantage of the infinite while loop of the bot. (Feel free to use this module for your project)
+- I noticed a JSONDecodeError being raised when the DiscordWebhook module attempts to relay an IRC message through Discord.
+  - It happened on the bot i'm running twice in 2 consecutive days, so i've added an exception to stop the process from crashing.
+  - When the module fails, the message will (hopefully) be relayed as simple text. i.e `<john> hi there`
+  - (hopefully because i wasn't able to recreate the error, will update if it happens again and doesn't work)
+
 # August 18 2023
-- Leaving the "Relay" term behind since this acts a lot more like a "Bridge" between IRC and Discord. Not just relaying in text e.g <john> hi there
+- Leaving the "Relay" term behind since this acts a lot more like a "Bridge" between IRC and Discord. Not just relaying in text e.g `<john> hi there`
 - Added multi-channel support
   - You can now have the Bridge work in multiple combinations of IRC and Discord Channels
   - In case you were using the bot before this update, your discord channel, irc channel and webhook values will bw converted to the new format and the bot will work as before

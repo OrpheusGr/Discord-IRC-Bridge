@@ -1,4 +1,4 @@
-5 # Imports
+# Imports
 import discord
 import asyncio
 import re
@@ -10,6 +10,7 @@ import settings
 import helpreplies
 import sys
 import random
+import thetimers
 condict = {}
 killed = {}
 leftirc = {}
@@ -21,6 +22,14 @@ msg_cooldown = 0
 savedclients = {}
 mymessages = ""
 channel_sets = {}
+clockmoji = u"\U0001F552"
+cmdlist = ["!joinirc", "!leaveirc", "!nick", "!whoami", "!bridgeuptime", "!bridgeshutdown", "!fjoinirc", "!kill", "!fnick", "!whois"]
+cooldown = {}
+
+for i in cmdlist:
+    cooldown[i] = {}
+cooldown["globalcool"] = {}
+cooldown["alreadyreact"] = {}
 
 # Load the config
 def load_the_config():
@@ -180,6 +189,15 @@ def is_member(id):
     member = guild.get_member(int(id))
     return member
 
+def check_global_cooldown(authorid):
+    global cooldown
+    foundincool = 0
+    for i in cooldown:
+        cmd = cooldown[i]
+        if authorid in cmd:
+            foundincool += 1
+    return foundincool
+
 async def setstatus_async(a):
     if AUTOCLIENTS != True:
         status = "!joinirc to connect to IRC"
@@ -228,6 +246,7 @@ async def on_message(message):
     global thread_lock
     global condict
     global leftirc
+    global cooldown
     checknick = False
     ref = ""
     msgrefpin = False
@@ -296,7 +315,7 @@ async def on_message(message):
         if content == "":
             content = urls
         else:
-            content = content + urls
+            content = content + " " + urls
     if content == "" and msgrefpin == False:
         print("Stickers/embed are not seen by discord.py")
         return
@@ -304,6 +323,29 @@ async def on_message(message):
     contentsplit = content.split()
 
     cmd = contentsplit[0].lower()
+
+    # simple command cooldown system, 10 seconds long, adds a clock emoji reaction if the author
+    # is in cooldown for the command used, and if they are in cooldown for 3 or more commamds
+    # adds them to global cooldown for 60 seconds.
+
+    if cmd in cmdlist and authorid not in DISCORDBOTOPS:
+        if authorid in cooldown[cmd] or authorid in cooldown["globalcool"]:
+            if authorid not in cooldown["alreadyreact"]:
+                cooldown["alreadyreact"][authorid] = 1
+                reactdel = 10
+                if authorid in cooldown["globalcool"]:
+                    reactdel = 60
+                thetimers.add_timer("", reactdel, cooldown["alreadyreact"].pop, authorid)
+                await message.add_reaction(clockmoji)
+            return
+        else:
+            cooldown[cmd][authorid] = 1
+            thetimers.add_timer("", 10, cooldown[cmd].pop, authorid)
+            checkhowmany = check_global_cooldown(authorid)
+            if checkhowmany == 3:
+                cooldown["globalcool"][authorid] = 1
+                thetimers.add_timer("", 60, cooldown["globalcool"].pop, authorid)
+
     if AUTOCLIENTS == True and authorid not in leftirc and cmd.startswith("!") == False and cmd != "!joinirc":
         if authorid not in condict:
             if authorid in killed:

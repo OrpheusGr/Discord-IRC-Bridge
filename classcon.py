@@ -3,6 +3,7 @@ import irc.client
 import time
 import re
 import settings
+import thetimers
 reactor = irc.client.Reactor()
 irc.client.ServerConnection.buffer_class.encoding = "utf-8"
 irc.client.ServerConnection.buffer_class.errors = "replace"
@@ -13,6 +14,7 @@ disconnectretries = 0
 quitf = {}
 savedclients = {}
 channels_lists = {}
+join_delay = 0
 
 # Load the config
 def load_the_config():
@@ -49,6 +51,7 @@ def startloop(nick, server, prt):
     loopin = 1
     while loopin:
         reactor.process_once(0.2)
+        thetimers.check_timers()
         time.sleep(0.2)
 
 def stoploop():
@@ -166,6 +169,7 @@ def on_connectbot(connection, event):
     global mom
     global channel
     global disconnectretries
+    global join_delay
     disconnectretries = 0
     if connection != mom:
         botdict[connection.get_nickname()] = connection.discordid
@@ -180,9 +184,16 @@ def on_connectbot(connection, event):
         for client in discord.condict:
             discord.condict[client].connect()
         discord.setstatus()
+    join_delay += 1.5
+    if "unset_join_delay" in thetimers.timers:
+        thetimers.cancel_timer("unset_join_delay")
+    thetimers.add_timer("unset_join_delay", 15, unset_join_delay)
     for item in channel_sets:
-        connection.join(item)
+        thetimers.add_timer("", join_delay, connection.join, item)
 
+def unset_join_delay():
+    global join_delay
+    join_delay = 0
 
 def on_nicknameinuse(connection, event):
     cnick = connection.get_nickname()
@@ -266,6 +277,8 @@ def on_join(connection, event):
         return
     discord_chan = channel_sets[event.target]["real_chan"]
     if connection_name != event.source.nick:
+        if event.target not in channels_lists:
+            channels_lists[event.target] = {}
         channels_lists[event.target][event.source.nick] = {"host": event.source.host}
         #print(channels_lists)
         if event.source.nick in botdict:
@@ -390,7 +403,9 @@ def on_disconnect(connection, event):
              discord.shutdown()
              stoploop()
              return
-        connection.reconnect()
+        if "mom-reconn" in thetimers.timers:
+             thetimers.cancel_timer("mom-reconn")
+        thetimers.addtimer("mom_reconn", 10, connection.reconnect)
         return
     if connection.sent_quit != 1:
         discord.send_to_all("<@" + connection.discordid + ">" + " Unexpectedly disconnected from " + event.source + " " + event.arguments[0])
@@ -400,7 +415,7 @@ def on_disconnect(connection, event):
         discord.condict.pop(connection.discordid)
     cn = connection.get_nickname()
     if cn in botdict:
-        botdict.pop(connection.get_nickname())
+        botdict.pop(cn)
 
 def on_error(connection, event):
     print(event.source, event.arguments)
