@@ -240,8 +240,13 @@ def on_pubmsg(connection, event):
         finalmsg = "*" + finalmsg + "*"
     with thread_lock:
         print("[IRC]", sender, ":", finalmsg)
-    webhook = DiscordWebhook(url=webhooklink, content=finalmsg, username=sender + " [IRC]")
-    response = webhook.execute()
+    try:
+        webhook = DiscordWebhook(url=webhooklink, content=finalmsg, username=sender + " [IRC]")
+        response = webhook.execute()
+    except:
+        discord.send_my_message(discord_channel, "```Due to an error, the current IRC msg failed to be sent through webhook, it is being sent as plain text through the main bot instead.```")
+        discord.send_my_messagw(discord_channel, "<%s> %s" % (sender, finalmsg))
+
     #IRC bot ops commands block
     if sender in IRCBOTOPS:
         if cmd == "!bridgeshutdown":
