@@ -56,7 +56,7 @@ def get_urls(attach):
     urls = ""
     add = ""
     for i in range(len(attach)):
-        urls += add + "<" + attach[i].url + ">"
+        urls += add + attach[i].url
         if add == "":
             add = " | "
     return urls
