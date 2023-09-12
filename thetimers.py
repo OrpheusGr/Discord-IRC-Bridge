@@ -10,13 +10,13 @@ def check_timers():
         if currtime >= timertime:
             target = timer["target"]
             arguments = timer["arguments"]
+            timers.pop(i)
             if arguments != None:
-                target(arguments)
+                target(*arguments)
             else:
                 target()
-            timers.pop(i)
 
-def add_timer(name, delay, target, arguments=None):
+def add_timer(name, delay, target, *arguments):
     global timers
     if name in timers:
         raise Exception("a timer with this name already exists")
@@ -28,7 +28,6 @@ def add_timer(name, delay, target, arguments=None):
          raise TypeError("delay argument is expected to be int or float")
     timetodo = currtime + float(delay)
     timers[name] = {"time": timetodo, "target": target, "arguments": arguments}
-
 
 def cancel_timer(name):
     global timers

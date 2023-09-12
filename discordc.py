@@ -25,6 +25,8 @@ channel_sets = {}
 clockmoji = u"\U0001F552"
 cmdlist = ["!joinirc", "!leaveirc", "!nick", "!whoami", "!bridgeuptime", "!bridgeshutdown", "!fjoinirc", "!kill", "!fnick", "!whois"]
 cooldown = {}
+statuses = ["Discord & IRC", "the sound of IRC", "Bridging IRC & Discord", "IRC & Discord", "Oldschool IRC mixtape", "The world of IRC", "IRC ambience"]
+statusindex = 0
 
 for i in cmdlist:
     cooldown[i] = {}
@@ -134,7 +136,14 @@ def replace_emojis(content):
     return content
 
 def setstatus():
-    asyncio.run_coroutine_threadsafe(setstatus_async(1), client.loop)
+    global statusindex
+    c_status = statuses[statusindex]
+    asyncio.run_coroutine_threadsafe(setstatus_async(c_status), client.loop)
+    if statusindex < len(statuses)-1:
+        statusindex += 1
+    else:
+        statusindex = 0
+    thetimers.add_timer("setstatus", 900, setstatus)
 
 def send_my_message(discord_chan, message):
     global client
@@ -198,11 +207,13 @@ def check_global_cooldown(authorid):
             foundincool += 1
     return foundincool
 
-async def setstatus_async(a):
+async def setstatus_async(status):
+    '''
     if AUTOCLIENTS != True:
         status = "!joinirc to connect to IRC"
     else:
         status = "Discord & IRC"
+    '''
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=status))
 
 async def shutdown_async():

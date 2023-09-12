@@ -1,3 +1,6 @@
+# September 11 2023
+- Made the Discord bot's status change every 15 minutes to alternate versions
+
 # August 30 2023
 - Added a command cooldown system 
   - When a Discord user uses a command, a 10 second cooldown is enabled for them for this command
