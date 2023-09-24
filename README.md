@@ -25,16 +25,16 @@ Add a new application and bot user to your Discord account, (on the Discord Deve
 https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permissions=3072  
 (change CLIENT_ID to your application's client_id)
 
-**For all the feats of the bot to work you'll need to enable all the Intents in the Bot page of your Application**.
+**For all the feats of the bot to work you'll need to enable all the Intents in the Bot page of your Discord Bot  Application**.
 
 ## Features
 
-- You can set up multiple channel sets that will ne relayed.
+- You can set up multiple channel sets that will be relayed.
   - e.g #foo to be bridged with Discord channel 292838383893930 (Discord channel ID)
   - and #python to be bridged with Discord channel 404949399393939
   - you can do this for as many channel combinations as you need 
-  - you may edit/add/delete channel sets using the setupwizard.py (once you're done you need to restart the bot for the changes to take effect)
-- Uses webhooks to spoof IRC nicks as Discord "users" (bot tag next to their name, all webhooks have it)
+  - you may edit/add/delete channel sets using the setupwizard.py (once you're done you need to restart the bot for the changes to take effect.)
+- Uses webhooks to spoof IRC nicks as Discord "users" (bot tag next to their name, all webhooks have it.)
 - Makes an IRC client for a Discord user upon their request (use !joinirc in the relayed Discord channel.) Or automatically when they send a Discord message. You can choose between a command or auto connecting when you run the setupwizard.py
 - Bot ops for both IRC and Discord that can use moderation/maintainance commands.
 - The bot picks up on Discord user's status changes and sets them as their AWAY status on IRC (provided they have an IRC client connected)

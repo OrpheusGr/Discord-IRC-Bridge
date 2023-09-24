@@ -1,3 +1,21 @@
+# September 24 2023
+- If by any chance you were using the Bridge before this update you'll have to delete savedclients.pkl
+  - As a result all the saved client info will be deleted and users will have to rejoin IRC
+  - I would make it patch the file by adding all the channels to all the users' saved info but-
+  - That would again lead to IRC clients joining corresponding IRC channels that they may not need to be in or don't have access to the matching Discord channels
+  - Read more below:
+-  Changes in commands and 1 new command: !leavechan
+  -  !joinirc and !fjoinirc will join only the corresponding IRC channel, and not all channels in the channelsets
+    - new argument --all 
+    - if used joins all the channels the user has saved (not all the channels)
+    - Before this change, when a user used !joinirc or !fjoinirc the client that was made joined all the channels in the channelsets.
+    - That lead to clients joining corresponding IRC channels of Discord channels they may not chat in or didn't even have access to.
+  - !leaveirc is now !quitirc (!leaveirc still works) The functionality is the same.
+  - New command: !leavechan (Leaves (/part) the corresponding IRC channel.
+- Fixed a bug where some characters in the end of a splitted message weren't sent (i hadn't factored the CRLF in.
+- Fixed a few other minor bugs (part reasons were not relayed to Discord and other bugs/typos)
+- Removed forgotten prints that flooded the terminal buffer 
+
 # September 11 2023
 - Made the Discord bot's status change every 15 minutes to alternate versions
 

@@ -14,6 +14,7 @@ import thetimers
 condict = {}
 killed = {}
 leftirc = {}
+leftirc_chan = {}
 help = helpreplies.help
 shutting_down = 0
 msg_counter = 0
@@ -23,10 +24,11 @@ savedclients = {}
 mymessages = ""
 channel_sets = {}
 clockmoji = u"\U0001F552"
-cmdlist = ["!joinirc", "!leaveirc", "!nick", "!whoami", "!bridgeuptime", "!bridgeshutdown", "!fjoinirc", "!kill", "!fnick", "!whois"]
+cmdlist = ["!joinirc", "!leaveirc", "!quitirc", "!leavechan", "!nick", "!whoami", "!bridgeuptime", "!bridgeshutdown", "!fjoinirc", "!kill", "!fnick", "!whois"]
 cooldown = {}
 statuses = ["Discord & IRC", "the sound of IRC", "Bridging IRC & Discord", "IRC & Discord", "Oldschool IRC mixtape", "The world of IRC", "IRC ambience"]
 statusindex = 0
+timesleep = 0
 
 for i in cmdlist:
     cooldown[i] = {}
@@ -158,12 +160,12 @@ def shutdown(reason=""):
     shutting_down = 1
     sleeptime = (len(condict) * 0.5) + 5
     quitall("Bridge shutting down")
+    '''
     classcon.momobj.sent_quit_on()
     uptime = classcon.get_uptime()
-    if reason != "":
-        reason = "Reason: " +  reason
     classcon.mom.disconnect("Bridge is shutting down after running for " + uptime + " " + reason)
     die()
+    '''
 
 def die():
     asyncio.run_coroutine_threadsafe(shutdown_async(), client.loop)
@@ -171,11 +173,16 @@ def die():
 
 def quitall(reason):
     copycondict = list(condict.keys())
+    timesleep = 0
     for item in copycondict:
+        timesleep += 1
         con = condict[item].conn
         setattr(con, "sent_quit", 1)
-        con.disconnect(reason)
-        time.sleep(0.5)
+        asyncio.run_coroutine_threadsafe(do_async_stuff(con.disconnect, timesleep, reason), client.loop)
+    classcon.momobj.sent_quit_on()
+    uptime = classcon.get_uptime()
+    classcon.mom.disconnect("Bridge is shutting down after running for " + uptime + " " + reason)
+    asyncio.run_coroutine_threadsafe(do_async_stuff(die, timesleep + 1), client.loop)
 
 async def send_my_message_async(discord_chan, message):
     global msg_counter
@@ -208,17 +215,15 @@ def check_global_cooldown(authorid):
     return foundincool
 
 async def setstatus_async(status):
-    '''
-    if AUTOCLIENTS != True:
-        status = "!joinirc to connect to IRC"
-    else:
-        status = "Discord & IRC"
-    '''
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=status))
 
 async def shutdown_async():
     await asyncio.sleep(2)
     await client.close()
+
+async def do_async_stuff(target, delay, *arguments):
+    await asyncio.sleep(delay)
+    target(*arguments)
 
 @client.event
 async def on_message_edit(before, after):
@@ -275,6 +280,8 @@ async def on_message(message):
         return
 
     irc_chan = channel_sets[channel_id]["irc_chan"]
+    if irc_chan not in leftirc_chan:
+        leftirc_chan[irc_chan] = []
     # Detect if a message was pinned
 
     if message.type == discord.MessageType.pins_add:
@@ -365,8 +372,11 @@ async def on_message(message):
                 if timediff < TIMEKILLED or TIMEKILLED == 0:
                    return
             if authorid in classcon.savedclients:
-                checknick = fixnick(classcon.savedclients[authorid])
+                checknick = fixnick(classcon.savedclients[authorid]["nick"])
                 checknick = checknick[0:len(checknick)-3]
+                savedchans = classcon.savedclients[authorid]["channels"]
+                if irc_chan not in savedchans:
+                    savedchans.append(irc_chan)
             else:
                 checknick = fixnick(message.author.name)
             while checknick == False:
@@ -374,10 +384,21 @@ async def on_message(message):
                     checknick = fixnick(message.author.nick.replace(" ", "_"))
                 else:
                     checknick = "DiscordUser_" + str(random.randomint(100,9999))
-            newclient = classcon.IRCbots(checknick + "[R]", IRCSERVER, IRCPORT, None, False, authorid)
+            newclient = classcon.IRCbots(checknick + "[R]", IRCSERVER, IRCPORT, [irc_chan], None, False, authorid)
             newclientcon = newclient.conn
             condict[authorid] = newclient
             newclient.connect()
+        elif authorid in condict:
+            ucon = condict[authorid].conn
+            irc_nick = ucon.get_nickname()
+            check_ison_chan = classcon.ison_chan(irc_chan, irc_nick)
+            if check_ison_chan == False:
+                ucon.join(irc_chan)
+                savedchans = classcon.savedclients[authorid]["channels"]
+                if irc_chan not in savedchans:
+                    savedchans.append(irc_chan)
+                    settings.saveclients(classcon.savedclients)
+
     # botops commands block
     if authorid in DISCORDBOTOPS:
 
@@ -416,16 +437,32 @@ async def on_message(message):
 
         #fjoinirc command - Makes a client for another user
         elif cmd == "!fjoinirc":
+            if idarg == str(client.user.id):
+                send_my_message(message.channel, "You can't make an IRC client for me!")
+                return
             if idarg == "":
                 send_my_message(message.channel, "You need to mention the user you want to forcejoin")
                 return
             if idarg in condict:
-                send_my_message(message.channel, "The user you provided has already joined IRC")
-                return
+                ucon = condict[idarg].conn
+                irc_nick = ucon.get_nickname()
+                check_ison_chan = classcon.ison_chan(irc_chan, irc_nick)
+                if check_ison_chan == False:
+                    ucon.join(irc_chan)
+                    savedchans = classcon.savedclients[idarg]["channels"]
+                    if irc_chan not in savedchans:
+                        savedchans.append(irc_chan)
+                        settings.saveclients(classcon.savedclients)
+                    return
+                else:
+                    send_my_message(message.channel, "The user you provided has already joined " + irc_chan + " on IRC")
+                    return
             if classcon.mom.is_connected() == False:
                 send_my_message(message.channel, "Central bot is currently disconnected from IRC, please wait and try again.")
                 return
 
+            if idarg in leftirc_chan[irc_chan]:
+                leftirc_chan[irc_chan].remove(idarg)
             if "--nick" in contentsplit:
                 contentsplit.remove("--nick")
                 if idarg_nick:
@@ -442,7 +479,7 @@ async def on_message(message):
                      checknick = fixnick(idarg_name)
             else:
                  if idarg in classcon.savedclients:
-                     checknick = classcon.savedclients[idarg]
+                     checknick = classcon.savedclients[idarg]["nick"]
                      checknick = checknick[0:len(checknick)-3]
                  else:
                      checknick = fixnick(idarg_name)
@@ -450,7 +487,7 @@ async def on_message(message):
                  send_my_message(message.channel, "The nickname you provided is invalid. IRC nicks must be A-Z a-z 0-9")
                  return
 
-            newclient = classcon.IRCbots(checknick + "[R]", IRCSERVER, IRCPORT, None, False, idarg)
+            newclient = classcon.IRCbots(checknick + "[R]", IRCSERVER, IRCPORT, [irc_chan], None, False, idarg)
             newclientcon = newclient.conn
             condict[idarg] = newclient
             newclient.connect()
@@ -480,7 +517,7 @@ async def on_message(message):
                 return
             ucon.nick(urequest + "[R]")
             classcon.savedclients.pop(idarg)
-            classcon.savedclients[idarg] = urequest + "[R]"
+            classcon.savedclients[idarg]["nick"] = urequest + "[R]"
             settings.saveclients(classcon.savedclients)
             return
 
@@ -491,7 +528,7 @@ async def on_message(message):
                 return
             if idarg not in condict:
                 if idarg in classcon.savedclients:
-                    send_my_message(message.channel, "This user doesn't have a connected client at the moment, but the nick i have saved for them is: " + classcon.savedclients[idarg])
+                    send_my_message(message.channel, "This user doesn't have a connected client at the moment, but the nick i have saved for them is: " + classcon.savedclients[idarg]["nick"])
                     return
                 else:
                     send_my_message(message.channel, "This user doesn't have a connected client and there's no saved client for them")
@@ -500,22 +537,66 @@ async def on_message(message):
                 send_my_message(message.channel, "This user's IRC nick is: " + str(classcon.find_nick_by_id(idarg)))
                 return
 
+        #fleavechan command - User's IRC client leaves the IRC channel matching the Discord channel.
+        elif cmd == "!fleavechan" or cmd == "!flvchan":
+            if idarg == "":
+                send_my_message(message.channel, "You need to mention a user as an argument to this command. \n e.g " + cmd + " @mention-here")
+            if idarg not in condict:
+                send_my_message(message.channel, "User has no client connected. Did you mean: !fjoinirc ?")
+                return
+            ucon = condict[idarg].conn
+            irc_nick = ucon.get_nickname()
+            check_ison_chan = classcon.ison_chan(irc_chan, irc_nick)
+            if check_ison_chan == False:
+                send_my_message(message.channel, "User is not in" + irc_chan + " in IRC.")
+                return
+            reason = ""
+            if len(contentsplit) > 1:
+                reason = "Reason: " + ' '.join(contentsplit[1:])
+            ucon.part(irc_chan, "Client removed from " + irc_chan + " by botop: " + message.author.name + " " + reason)
+            savedchans = classcon.savedclients[idarg]["channels"]
+            if irc_chan in savedchans:
+                savedchans.remove(irc_chan)
+            settings.saveclients(classcon.savedclients)
+            leftirc_chan[irc_chan].append(idarg)
+
     #public commands block
 
-    #joinirc command - Creates a client if the user doesn't already have one and their username/desired nick is acceptable.
-    if (cmd == "!joinirc" and AUTOCLIENTS == False) or (cmd == "!joinirc" and AUTOCLIENTS == True and authorid in leftirc):
+    #joinirc command - Creates an IRC client if the user doesn't already have one and their username/desired nick is acceptable.
+    # If the user already has an IRC client, checks if it's in the correspondimg IRC channel.
+    # If not it saves the channel on the user's saved channels and joins the channel.
+    if (cmd == "!joinirc" and AUTOCLIENTS == False) or (cmd == "!joinirc" and AUTOCLIENTS == True and (authorid in leftirc or authorid in leftirc_chan[irc_chan])):
         usenick = message.author.name
+        join_chans = [irc_chan]
         if "--nick" in contentsplit:
             contentsplit.remove("--nick")
             if message.author.nick:
                 usenick = message.author.nick.replace(" ", "_")
+        if "--all" in contentsplit:
+            contentsplit.remove("--all")
+            if authorid in classcon.savedclients:
+                join_chans = classcon.savedclients[authorid]["channels"]
+            else:
+                join_chans = [irc_chan]
         if classcon.mom.is_connected() == False:
             send_my_message(message.channel, "Central bot is currently disconnected from IRC, please wait and try again.")
             return
 
         if authorid in condict:
-            send_my_message(message.channel, "**Error**: You already have a client connected to IRC, your messages are being sent to IRC through it!")
-            return
+            ucon = condict[authorid].conn
+            irc_nick = ucon.get_nickname()
+            check_ison_chan = classcon.ison_chan(irc_chan, irc_nick)
+            print(check_ison_chan)
+            if check_ison_chan == False:
+                ucon.join(irc_chan)
+                savedchans = classcon.savedclients[authorid]["channels"]
+                if irc_chan not in savedchans:
+                    savedchans.append(irc_chan)
+                    settings.saveclients(classcon.savedclients)
+                return
+            else:
+                send_my_message(message.channel, "You have already joined " + irc_chan + " on IRC.")
+                return
 
         if authorid in killed:
             ctime = round(time.time(), 0)
@@ -534,7 +615,7 @@ async def on_message(message):
             checknick = fixnick(contentsplit[1])
         else:
             if authorid in classcon.savedclients:
-                checknick = classcon.savedclients[authorid]
+                checknick = classcon.savedclients[authorid]["nick"]
                 checknick = checknick[0:len(checknick)-3]
             else:
                 checknick = fixnick(usenick)
@@ -547,7 +628,7 @@ async def on_message(message):
             return
 
         if authorid not in condict:
-            newclient = classcon.IRCbots(checknick + "[R]", IRCSERVER, IRCPORT, None, False, authorid)
+            newclient = classcon.IRCbots(checknick + "[R]", IRCSERVER, IRCPORT, join_chans, None, False, authorid)
             newclientcon = newclient.conn
             condict[authorid] = newclient
             newclient.connect()
@@ -571,7 +652,7 @@ async def on_message(message):
         return
 
     #leaveirc command - Disconnects the user's client from IRC, to get it back they must user !joinirc (wether AUTOCLIENTS is on or off)
-    elif cmd == "!leaveirc":
+    elif cmd == "!leaveirc" or cmd == "!quitirc":
         if authorid not in condict:
             send_my_message(message.channel, "You don't have a client connected. Did you mean: !joinirc ? :smirk:")
             return
@@ -587,6 +668,27 @@ async def on_message(message):
         ucon.disconnect("Client removed by user. " + reason)
         leftirc[authorid] = 1
         return
+
+    #leavechan command - User's IRC client leaves the IRC channel matching the Discord channel.
+    if cmd == "!leavechan":
+        if authorid not in condict:
+            send_my_message(message.channel, "You don't have a client connected. Did you mean: !joinirc ?")
+            return
+        ucon = condict[authorid].conn
+        irc_nick = ucon.get_nickname()
+        check_ison_chan = classcon.ison_chan(irc_chan, irc_nick)
+        if check_ison_chan == False:
+            send_my_message(message.channel, "You haven't joined " + irc_chan + " in IRC.")
+            return
+        reason = ""
+        if len(contentsplit) > 1:
+            reason = "Reason: " + ' '.join(contentsplit[1:])
+        ucon.part(irc_chan, "Client removed from " + irc_chan + " by user. " + reason)
+        savedchans = classcon.savedclients[authorid]["channels"]
+        if irc_chan in savedchans:
+            savedchans.remove(irc_chan)
+        settings.saveclients(classcon.savedclients)
+        leftirc_chan[irc_chan].append(authorid)
 
     #nick command - If the user has a client, changes its nick to the provided one. (if the nick isn't used)
     elif cmd == "!nick":
@@ -608,7 +710,7 @@ async def on_message(message):
             send_my_message(message.channel, "Another Discord User is using a simular/the same nick, please choose another one to avoid confusion")
             return
         ucon.nick(urequest + "[R]")
-        classcon.savedclients[authorid] = urequest + "[R]"
+        classcon.savedclients[authorid]["nick"] = urequest + "[R]"
         settings.saveclients(classcon.savedclients)
         return
 
@@ -616,7 +718,7 @@ async def on_message(message):
     elif cmd == "!whoami":
         if authorid not in condict:
             if authorid in classcon.savedclients:
-                send_my_message(message.channel, "You don't have a connected client at the moment, but the nick i have saved for you is: " + classcon.savedclients[authorid])
+                send_my_message(message.channel, "You don't have a connected client at the moment, but the nick i have saved for you is: " + classcon.savedclients[authorid]["nick"])
                 return
             else:
                 send_my_message(message.channel, "You don't have a connected client and there's no saved client for you.")
@@ -633,7 +735,7 @@ async def on_message(message):
 
 
     with thread_lock:
-        print("[Discord] " + message.author.name + ": " + content)
+        print("[Discord] " + message.channel.name + " > " + irc_chan + " " + message.author.name + ": " + content)
 
 def run():
     client.run(TOKEN)
@@ -706,5 +808,5 @@ async def on_ready():
         for savedclient in savedclients:
             checkmember = is_member(savedclient)
             if checkmember != None:
-                newclient = classcon.IRCbots(savedclients[savedclient], IRCSERVER, IRCPORT, None, False, savedclient)
+                newclient = classcon.IRCbots(savedclients[savedclient]["nick"], IRCSERVER, IRCPORT, savedclients[savedclient]["channels"], None, False, savedclient)
                 condict[savedclient] = newclient

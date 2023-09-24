@@ -43,7 +43,7 @@ def startloop(nick, server, prt):
     start_time = int(time.time())
     global mom
     global momobj
-    momobj = IRCbots(nick, server, prt, True)
+    momobj = IRCbots(nick, server, prt, ["placeholder"], True)
     mom = momobj.conn
     time.sleep(15)
     momobj.connect()
@@ -179,17 +179,22 @@ def on_connectbot(connection, event):
             if raw_status != "online":
                 ucon = discord.condict[connection.discordid]
                 ucon.set_away("Discord Status: " + raw_status)
+            if "unset_join_delay" in thetimers.timers:
+                thetimers.cancel_timer("unset_join_delay")
+            thetimers.add_timer("unset_join_delay", 15, unset_join_delay)
+            my_channels = connection.channels
+            for item in my_channels:
+                join_delay += 1.5
+                thetimers.add_timer("", join_delay, connection.join, item)
     elif connection == mom:
+        mom_join_delay = 0
         print("[IRC] Successful connection to", event.source)
+        for item in channel_sets:
+            mom_join_delay += 1
+            thetimers.add_timer("", mom_join_delay, connection.join, item)
         for client in discord.condict:
             discord.condict[client].connect()
         discord.setstatus()
-    join_delay += 1.5
-    if "unset_join_delay" in thetimers.timers:
-        thetimers.cancel_timer("unset_join_delay")
-    thetimers.add_timer("unset_join_delay", 15, unset_join_delay)
-    for item in channel_sets:
-        thetimers.add_timer("", join_delay, connection.join, item)
 
 def unset_join_delay():
     global join_delay
@@ -239,7 +244,7 @@ def on_pubmsg(connection, event):
     if event.type == "action":
         finalmsg = "*" + finalmsg + "*"
     with thread_lock:
-        print("[IRC]", sender, ":", finalmsg)
+        print("[IRC]", discord_chan, ">", event.target, sender, ":", finalmsg)
     try:
         webhook = DiscordWebhook(url=webhooklink, content=finalmsg, username=sender + " [IRC]")
         response = webhook.execute()
@@ -257,7 +262,7 @@ def on_pubmsg(connection, event):
             discord.send_to_all("**Announcement: Discord-IRC-Bridge is Shutting down after running for " + uptime + " " + reason + "**")
             time.sleep(2)
             discord.shutdown(reason)
-            stoploop()
+            #stoploop()
 
 def on_whoreply(connection, event):
     global channels_lists
@@ -289,11 +294,11 @@ def on_join(connection, event):
         if event.source.nick in botdict:
             did = botdict[event.source.nick]
             conobj = discord.condict[did]
-            conobj.myprivmsg_line[event.target] = event.source + " PRIVMSG " + event.target + " :"
+            conobj.myprivmsg_line = event.source + " PRIVMSG"
         discord.send_my_message(discord_chan, "-> **" + event.source.nick + " joined " + event.target + "**")
     else:
         connection.who(event.target)
-        momobj.myprivmsg_line[event.target] = event.source + " PRIVMSG " + event.target + " :"
+        momobj.myprivmsg_line = event.source + " PRIVMSG"
         time.sleep(2)
         with thread_lock:
              print("[IRC] Joined", event.target)
@@ -313,7 +318,11 @@ def on_part(connection, event):
     if connection.get_nickname() != event.source.nick:
         channels_lists[event.target].pop(event.source.nick)
         #print(channels_lists)
-        discord.send_my_message(discord_chan, "<- **" + event.source.nick + " left " + event.target + "**")
+        if event.arguments[0]:
+            reason = "(" + event.arguments[0] + ")"
+        else:
+            reason = ""
+        discord.send_my_message(discord_chan, "<- **" + event.source.nick + " left " + event.target + reason + "**")
     else:
         connection.join(channel)
 
@@ -346,6 +355,7 @@ def on_kick(connection, event):
     discord_chan = channel_sets[event.target]["real_chan"]
     if connection == mom:
         channels_lists[event.target].pop(knick)
+        #print(channels_lists)
         try:
             extras = "(" + event.arguments[1] + ")"
         except IndexError:
@@ -381,10 +391,10 @@ def on_nick(connection, event):
         botdict.pop(nick)
         botdict[newnick] = x
         conobj = discord.condict[x]
-        conobj.myprivmsg_line[event.target] = newnick + "".join(event.source.split("!")[1:]) + " PRIVMSG " + event.target + " :"
+        conobj.myprivmsg_line = newnick + "".join(event.source.split("!")[1:]) + " PRIVMSG"
     else:
         if connection.get_nickname() == event.source.nick:
-            momobj.myprivmsg_line[event.target] = event.source + " PRIVMSG " + event.target + " :"
+            momobj.myprivmsg_line = event.source + " PRIVMSG"
     event_msg = "**%s** *is now known as* **%s**" % (nick, newnick)
     for each_channel in channels_lists:
         x = channels_lists[each_channel]
@@ -393,6 +403,7 @@ def on_nick(connection, event):
             channels_lists[each_channel].pop(nick)
             channels_lists[each_channel][newnick] = prev
             discord.send_my_message(channel_sets[each_channel]["real_chan"], event_msg)
+        #print(channels_lists)
 
 def on_disconnect(connection, event):
     connection_name = connection.get_nickname()
@@ -410,7 +421,7 @@ def on_disconnect(connection, event):
              return
         if "mom-reconn" in thetimers.timers:
              thetimers.cancel_timer("mom-reconn")
-        thetimers.addtimer("mom_reconn", 10, connection.reconnect)
+        thetimers.add_timer("mom_reconn", 10, connection.reconnect)
         return
     if connection.sent_quit != 1:
         discord.send_to_all("<@" + connection.discordid + ">" + " Unexpectedly disconnected from " + event.source + " " + event.arguments[0])
@@ -426,14 +437,15 @@ def on_error(connection, event):
     print(event.source, event.arguments)
 
 class IRCbots():
-    def __init__(self, nik, srv, prt, mom=False, wh=None, discordid=None):
+    def __init__(self, nik, srv, prt, channels, mom=False, wh=None, discordid=None):
         self.nick = nik
         self.server = srv
         self.port = prt
         self.conn = reactor.server()
         self.lastmsg = round(time.time(),0)
         self.sent_quit = 0
-        self.myprivmsg_line = {}
+        self.myprivmsg_line = ""
+        #print(self.nick, discordid)
         if discordid:
             self.conn.discordid = discordid
         else:
@@ -443,8 +455,12 @@ class IRCbots():
         else:
             self.mother = None
             self.conn.sent_quit = 0
-            savedclients[discordid] = self.nick
+            if discordid not in savedclients:
+                savedclients[discordid] = {}
+            savedclients[discordid]["nick"] = self.nick
+            savedclients[discordid]["channels"] = channels
             settings.saveclients(savedclients)
+            self.conn.channels = channels
 
     def connect(self):
         c = self.conn.connect(self.server, self.port, self.nick, None, "Discord", self.conn.discordid)
@@ -476,18 +492,22 @@ class IRCbots():
     def sent_quit_on(self):
         self.sent_quit = 1
 
+    def get_myprivmsg_line(self, channel):
+        return self.myprivmsg_line + " " + channel + " :"
+
     def sendmsg(self, channel, msg, action=False):
         #print(msg, repr(msg))
         if self.conn.is_connected() == False:
             return
-        print(self.myprivmsg_line)
-        msg = split_msg(msg, 512-len(self.myprivmsg_line[channel]))
+        #print("myprivmsg_line: ", self.get_myprivmsg_line(channel))
+        msg = split_msg(msg, 509-len(self.get_myprivmsg_line(channel)))
         #print(msg[0][0], repr(msg[0][0]))
         self.delay_msg = 0
         for i in range(len(msg)):
             self.delay_msg += 0.5
             time.sleep(self.delay_msg)
             joint = msg[i][0]
+            #print("joint >", joint)
             if action == False:
                 self.conn.privmsg(channel, joint)
             else:
