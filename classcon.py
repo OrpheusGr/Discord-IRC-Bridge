@@ -318,7 +318,7 @@ def on_part(connection, event):
     if connection.get_nickname() != event.source.nick:
         channels_lists[event.target].pop(event.source.nick)
         #print(channels_lists)
-        if event.arguments[0]:
+        if len(event.arguments) > 0:
             reason = "(" + event.arguments[0] + ")"
         else:
             reason = ""
