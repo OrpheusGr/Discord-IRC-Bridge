@@ -36,7 +36,6 @@ def set_channel_sets(sets):
     for item in sets:
         value = sets[item]
         channel_sets[value["irc_chan"]] = {"discord_chan": item, "webhook": value["webhook"], "real_chan": value["real_chan"]}
-    #print(channel_sets)
 
 def startloop(nick, server, prt):
     global start_time
@@ -45,7 +44,7 @@ def startloop(nick, server, prt):
     global momobj
     momobj = IRCbots(nick, server, prt, ["placeholder"], True)
     mom = momobj.conn
-    time.sleep(15)
+    time.sleep(10)
     momobj.connect()
     global loopin
     loopin = 1
@@ -78,9 +77,11 @@ def get_start_time():
     global start_time
     return start_time
 
-def get_uptime():
+def get_uptime(raw=False):
     result = ""
     uptime = int(time.time()) - get_start_time()
+    if raw == True:
+        return uptime
     day = uptime // (24 * 3600)
     uptime = uptime % (24 * 3600)
     hour = uptime // 3600
@@ -173,20 +174,32 @@ def on_connectbot(connection, event):
     disconnectretries = 0
     if connection != mom:
         botdict[connection.get_nickname()] = connection.discordid
+        ucon = discord.condict[connection.discordid]
+        if IDENTIFY_ALL == True and NICKSERV_PASS != "":
+            if NICKSERV_ACCOUNT != "":
+                identify_command = "%s %s" % (NICKSERV_ACCOUNT, NICKSERV_PASS)
+            else:
+                identify_command = NICKSERV_PASS
+            ucon.sendmsg(NICKSERV_NAME, "IDENTIFY %s" % identify_command)
         member = discord.is_member(connection.discordid)
         if member != None:
             raw_status = member.raw_status
             if raw_status != "online":
-                ucon = discord.condict[connection.discordid]
                 ucon.set_away("Discord Status: " + raw_status)
             if "unset_join_delay" in thetimers.timers:
                 thetimers.cancel_timer("unset_join_delay")
             thetimers.add_timer("unset_join_delay", 15, unset_join_delay)
             my_channels = connection.channels
             for item in my_channels:
-                join_delay += 1.5
+                join_delay += 3
                 thetimers.add_timer("", join_delay, connection.join, item)
     elif connection == mom:
+        if IDENTIFY == True and NICKSERV_PASS != "":
+            if NICKSERV_ACCOUNT != "":
+                identify_command = "%s %s" % (NICKSERV_ACCOUNT, NICKSERV_PASS)
+            else:
+                identify_command = NICKSERV_PASS
+            momobj.sendmsg(NICKSERV_NAME, "IDENTIFY %s" % identify_command)
         mom_join_delay = 0
         print("[IRC] Successful connection to", event.source)
         for item in channel_sets:
@@ -436,6 +449,12 @@ def on_disconnect(connection, event):
 def on_error(connection, event):
     print(event.source, event.arguments)
 
+def on_privmsg(connection, event):
+    print(event.source.nick, event.arguments[0])
+
+def on_privnotice(connection, event):
+    print(event.source.nick, event.arguments[0])
+
 class IRCbots():
     def __init__(self, nik, srv, prt, channels, mom=False, wh=None, discordid=None):
         self.nick = nik
@@ -479,6 +498,8 @@ class IRCbots():
             c.add_global_handler("ping", self.on_ping)
             c.add_global_handler("error", on_error)
             c.add_global_handler("whoreply", on_whoreply)
+            c.add_global_handler("privmsg", on_privmsg)
+            c.add_global_handler("privnotice", on_privnotice)
 
     def on_ping(self, connection, event):
         if connection == mom:

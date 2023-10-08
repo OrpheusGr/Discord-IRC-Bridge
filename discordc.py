@@ -11,15 +11,13 @@ import helpreplies
 import sys
 import random
 import thetimers
+import atexit
 condict = {}
 killed = {}
 leftirc = {}
 leftirc_chan = {}
 help = helpreplies.help
 shutting_down = 0
-msg_counter = 0
-msg_time = 0
-msg_cooldown = 0
 savedclients = {}
 mymessages = ""
 channel_sets = {}
@@ -29,6 +27,9 @@ cooldown = {}
 statuses = ["Discord & IRC", "the sound of IRC", "Bridging IRC & Discord", "IRC & Discord", "Oldschool IRC mixtape", "The world of IRC", "IRC ambience"]
 statusindex = 0
 timesleep = 0
+lastmsg = {}
+sendmymsg_lastcall = 0
+sendmymsg_delay = 0
 
 for i in cmdlist:
     cooldown[i] = {}
@@ -147,58 +148,103 @@ def setstatus():
         statusindex = 0
     thetimers.add_timer("setstatus", 900, setstatus)
 
+# send_my_message actually used to contain what send_my_message_b contains now. I wanted to prevent the bot from flooding Discord and this was the easier way to do it without
+# changing every single line that called send_my_message. So i just changed send_my_message into a kind of buffer that delays the calls by adding a timer that calls _b
+# This way the system of editing the join/part/quit messages (instead of sending a new one) worked out the best, as the bot needed time to track the lastmsg in on_message
+# before send_my_message was called again.
+
 def send_my_message(discord_chan, message):
+    global sendmymsg_lastcall
+    global sendmymsg_delay
+    if sendmymsg_lastcall == 0:
+        sendmymsg_lastcall = time.time()
+    ctime = time.time()
+    diff = ctime - sendmymsg_lastcall
+    if diff < 2:
+        sendmymsg_delay += 2
+        thetimers.add_timer("", sendmymsg_delay, send_my_message_b, *(discord_chan, message))
+    else:
+        sendmymsg_delay = 0
+        send_my_message_b(discord_chan, message)
+    sendmymsg_lastcall = ctime
+
+def send_my_message_b(discord_chan, message):
     global client
-    asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, message), client.loop)
+    global lastmsg
+    chanid = str(discord_chan.id)
+    if chanid in lastmsg:
+        lastmsgchan = lastmsg[chanid]
+    else:
+        lastmsgchan = None
+    if lastmsgchan == None or str(lastmsgchan.author.id) != str(client.user.id) or (lastmsgchan.clean_content == "**Bridge is now running!**" and str(lastmsgchan.author.id) == str(client.user.id)):
+        asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, message), client.loop)
+    elif lastmsgchan != None and str(lastmsgchan.author.id) == str(client.user.id):
+        editedmsg = lastmsgchan.content + " | " + message
+        if "[R] joined" in lastmsgchan.clean_content:
+            if "[R] joined" in message and classcon.get_uptime(True) <= 120:
+                editedmsg = lastmsgchan.content + " | " + " ".join(message.split()[1:2]) + "**"
+                jointitle = "Bridge Clients Joined: "
+                if jointitle in lastmsgchan.clean_content:
+                    jointitle = ""
+                editedmsg = jointitle + editedmsg
+            elif "[R] joined" not in message:
+                asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, message), client.loop)
+                return
+        else:
+            if (lastmsgchan.content[0:4] in ["-> *", "<- *"] and message[0:4] not in ["-> *", "<- *"]) or (message[0:4] in ["-> *", "<- *"] and lastmsgchan.content[0:4] not in ["-> *", "<- *"]):
+                asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, message), client.loop)
+                return
+            if message[0:4] in ["-> *", "<- *"]:
+                message = " ".join(message.split()[1:3]) + "**"
+                editedmsg = lastmsgchan.content + " | " + message
+        if len(editedmsg) > 1980:
+            asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, "-"), client.loop)
+            asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, message), client.loop)
+            return
+        asyncio.run_coroutine_threadsafe(edit_my_message_async(lastmsgchan, editedmsg), client.loop)
 
 def send_to_all(message):
     for item in channel_sets:
         send_my_message(channel_sets[item]["real_chan"], message)
 
-def shutdown(reason=""):
+def shutdown(reason="", exiting=False):
+    if exiting == False:
+        atexit.unregister(shutdown)
     global shutting_down
     shutting_down = 1
-    sleeptime = (len(condict) * 0.5) + 5
-    quitall("Bridge shutting down")
-    '''
-    classcon.momobj.sent_quit_on()
-    uptime = classcon.get_uptime()
-    classcon.mom.disconnect("Bridge is shutting down after running for " + uptime + " " + reason)
-    die()
-    '''
+    quitall(reason, exiting)
 
 def die():
     asyncio.run_coroutine_threadsafe(shutdown_async(), client.loop)
     classcon.stoploop()
 
-def quitall(reason):
+def quitall(reason, exiting):
     copycondict = list(condict.keys())
     timesleep = 0
+    clientreason = "Bridge Shutting Down"
     for item in copycondict:
         timesleep += 1
         con = condict[item].conn
         setattr(con, "sent_quit", 1)
-        asyncio.run_coroutine_threadsafe(do_async_stuff(con.disconnect, timesleep, reason), client.loop)
+        if exiting == False:
+            thetimers.add_timer("", timesleep, con.disconnect, clientreason)
+        else:
+            con.disconnect(clientreason)
     classcon.momobj.sent_quit_on()
     uptime = classcon.get_uptime()
-    classcon.mom.disconnect("Bridge is shutting down after running for " + uptime + " " + reason)
-    asyncio.run_coroutine_threadsafe(do_async_stuff(die, timesleep + 1), client.loop)
+    if exiting == False:
+        thetimers.add_timer("", timesleep+1, classcon.mom.disconnect, "Bridge is shutting down after running for " + uptime + " " + reason)
+        asyncio.run_coroutine_threadsafe(do_async_stuff(die, timesleep + 3), client.loop)
+    else:
+        classcon.mom.disconnect("Bridge is shutting down after running for " + uptime + " " + reason)
+
+atexit.register(shutdown, "Bridge killed from Terminal", True)
 
 async def send_my_message_async(discord_chan, message):
-    global msg_counter
-    global msg_time
-    global msg_cooldown
-    ctime = time.time()
-    diff = ctime - msg_time
-    if msg_time == 0:
-        msg_time = ctime
-    if diff < 1:
-        msg_cooldown += 1
-        await asyncio.sleep(msg_cooldown)
-    else:
-         msg_cooldown = 0
-    msg_time = ctime
     await discord_chan.send(message.strip())
+
+async def edit_my_message_async(msg_object, edit):
+    await msg_object.edit(content=edit)
 
 def is_member(id):
     guild = client.get_guild(int(DISCORDSERVER))
@@ -263,16 +309,26 @@ async def on_message(message):
     global condict
     global leftirc
     global cooldown
+    global lastmsg
+
+    uptime = classcon.get_uptime(True)
+
+    if uptime <= 20:
+        return
+
     checknick = False
     ref = ""
     msgrefpin = False
     action_msg = False
+    channel_id = str(message.channel.id)
+
+    lastmsg[channel_id] = message
+
     # Certain conditions on which we don't want the bot to act
     if message.author == client.user:
         return
-    if str(message.channel.id) not in channel_sets:
+    if channel_id not in channel_sets:
         return
-    channel_id = str(message.channel.id)
     whid = channel_sets[channel_id]["webhook"].split("/")[5]
     if str(message.webhook_id) == whid:
         return
@@ -364,7 +420,10 @@ async def on_message(message):
                 cooldown["globalcool"][authorid] = 1
                 thetimers.add_timer("", 60, cooldown["globalcool"].pop, authorid)
 
-    if AUTOCLIENTS == True and authorid not in leftirc and cmd.startswith("!") == False and cmd != "!joinirc":
+    # This is a message catcher, it comes before all the other commands cause it's responsible for making and connecting an IRC client for the user that just sent a message
+    # This only gets triggeted if you enable the AUTOCLIENTS setting when running setupwizard.py to create or edit the config
+
+    if AUTOCLIENTS == True and authorid not in leftirc_chan[irc_chan] and cmd.startswith("!") == False and cmd != "!joinirc":
         if authorid not in condict:
             if authorid in killed:
                 ctime = round(time.time(), 0)
@@ -390,6 +449,8 @@ async def on_message(message):
             newclient.connect()
         elif authorid in condict:
             ucon = condict[authorid].conn
+            if ucon.is_connected() == False:
+                return
             irc_nick = ucon.get_nickname()
             check_ison_chan = classcon.ison_chan(irc_chan, irc_nick)
             if check_ison_chan == False:
@@ -586,7 +647,6 @@ async def on_message(message):
             ucon = condict[authorid].conn
             irc_nick = ucon.get_nickname()
             check_ison_chan = classcon.ison_chan(irc_chan, irc_nick)
-            print(check_ison_chan)
             if check_ison_chan == False:
                 ucon.join(irc_chan)
                 savedchans = classcon.savedclients[authorid]["channels"]

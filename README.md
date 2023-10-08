@@ -14,9 +14,9 @@ Some feats on this bot need 2.0+
 
 Install the following python libraries using pip:
 
-- irc
-- discord.py 
-- discord-webhook
+- [irc](https://pypi.org/project/irc/)
+- [discord.py](https://pypi.org/project/discord.py/) 
+- [discord-webhook](https://pypi.org/project/discord-webhook/)
 
 Clone/Download this repository and do 'python3 setupwizard.py' to create a config file.
 
@@ -36,6 +36,7 @@ https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permission
   - you may edit/add/delete channel sets using the setupwizard.py (once you're done you need to restart the bot for the changes to take effect.)
 - Uses webhooks to spoof IRC nicks as Discord "users" (bot tag next to their name, all webhooks have it.)
 - Makes an IRC client for a Discord user upon their request (use !joinirc in the relayed Discord channel.) Or automatically when they send a Discord message. You can choose between a command or auto connecting when you run the setupwizard.py
+- NickServ identification for the main bot or all the IRC clients (most networks have a limit of nicks that can identify to an account at the same time.)
 - Bot ops for both IRC and Discord that can use moderation/maintainance commands.
 - The bot picks up on Discord user's status changes and sets them as their AWAY status on IRC (provided they have an IRC client connected)
 - IRC users can mention Discord users just by typing the nick of their IRC client.
@@ -57,7 +58,7 @@ https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permission
 - Before starting the bot you need to `python3 setupwizard.py` to make a config file for the bot.
 - When you're done with the setup wizard, launch the bot using `python3 main.py`.
 - You may also use the setup wizard to edit any of the values in the future. (It will ask if you want to make a new config and when you say no it will ask if you want to edit the values) Remember to restart the bot for the new settings to be loaded.
-- When new settings are added with updates they will be added to your config with default values, when you pull the update and start the bot. You can then use the setupwizard to edit those values.
+- When new settings are added with updates they will be added to your config with default values when you start the bot or when you can run the setupwizard, which you can also use to edit those values.
 
 ## License
 

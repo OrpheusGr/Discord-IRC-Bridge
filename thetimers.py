@@ -36,21 +36,4 @@ def cancel_timer(name):
     else:
         raise Exception("No timer with name " + name + " found.")
 
-# uncomment this block to see how it works!
-'''
-add_timer("say a", 5, print, "a")
-add_timer("hello", 15, print, "hello")
-cancel_timer("hello")
-add_timer("say c", 10, print, "c")
 
-
-#test loop
-def check_loop():
-    global timers
-    while 1:
-        time.sleep(0.2)
-        check_timers()
-
-check_loop()
-
-'''

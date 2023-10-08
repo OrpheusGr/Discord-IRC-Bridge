@@ -6,13 +6,16 @@ import pickle
 myprint_count = 0
 config = {}
 newchannel_sets = {}
+missing = 0
+
+default_values = {"NICKCHANGE": True, "TIMEKILLED": 1, "INACTIVITY": 0, "AUTOCLIENTS": False, "IDENTIFY": False, "NICKSERV_NAME": "NickServ", "NICKSERV_PASS": "passhere", "IDENTIFY_ALL": False, "NICKSERV_ACCOUNT": "acchere"}
 
 def myprint(stuff, erase=0):
     global myprint_count
     print(stuff)
     myprint_count += 1
     if erase == 1:
-        for i in range(myprint_count-1):
+        for i in range(myprint_count):
             print("\033[F", end="")
             print("\033[K", end="")
         myprint_count = 1
@@ -42,14 +45,15 @@ def totype(of, to):
                    return "#" + to
                r = str(to)
         except:
-           r = ["nom_same_type", "string"]
+            if type(to) != str:
+                r = ["non_same_type", "string"]
     elif type(of) == bool:
         if to == "False":
            r = False
         elif to == "True":
            r = True
         else:
-           r = ""
+           r = False
     return r
 
 class bcolors:
@@ -95,7 +99,7 @@ load_config()
 x = True
 print(bcolors.BOLD + bcolors.UNDERLINE + bcolors.OKGREEN + "*** Discord-IRC-Bridge Set Up Wizard ***" + bcolors.OFF)
 if config != {}:
-    print(" ")
+    myprint(" ")
     myprint(bcolors.WARNING + "You already have a saved config file. Do you want to make a new one?" + bcolors.OFF)
     x = yninput()
 if x:
@@ -155,7 +159,52 @@ if x:
     IRCBOTOPS = input("IRC bot operators: ")
     myprint(bcolors.OKGREEN + "IRC bot ops list set to: " + IRCBOTOPS + bcolors.OFF)
     config["IRCBOTOPS"] = IRCBOTOPS
-    time.sleep(2)
+    time.sleep(1)
+    myprint("", 1)
+    print(bcolors.OKCYAN + "-------------NickServ Settings--------------")
+    myprint(" ")
+    myprint("Do you want the bot identify to NickServ? (y/n)")
+    x = yninput()
+    if x == True:
+        config["IDENTIFY"] = True
+        myprint(" ")
+        myprint("Do you want the bot to identify to a certain NickServ account (or nick)? (y/n)")
+        x = yninput()
+        if x == True:
+            config["NICKSERV_ACCOUNT"] = input("Input NickServ Account: ")
+            if config["NICKSERV_ACCOUNT"] == "":
+                config["NICKSERV_ACCOUNT"] = ""
+        else:
+            config["NICKSERV_ACCOUNT"] = ""
+        if config["NICKSERV_ACCOUNT"] == "":
+            myprint("No Nickserv account will be used")
+        else:
+            myprint("NickServ account set to: " + config["NICKSERV_ACCOUNT"])
+        myprint(" ")
+        myprint("Does NickServ use a nick other than NickServ on this network? (y/n)")
+        x = yninput()
+        if x == True:
+            config["NICKSERV_NAME"] = input("Input NickServ's nick here: ")
+            if config["NICKSERV_NAME"] == "":
+                config["NICKSERV_NAME"] = "NickServ"
+        else:
+            config["NICKSERV_NAME"] = "NickServ"
+        myprint("I will message " + config["NICKSERV_NAME"])
+        myprint(" ")
+        config["NICKSERV_PASS"] = input("Please input the NickServ password that will be used to identify: ")
+        while config["NICKSERV_PASS"] == "":
+            myprint("The pass cannot be blank.")
+            config["NICKSERV_PASS"] = input("Please input the NickServ password that will be used to identify: ")
+        myprint("NickServ pass set to: " + config["NICKSERV_PASS"])
+        myprint(" ")
+        if config["NICKSERV_ACCOUNT"] != "":
+            myprint("Do you want all the IRC clients to identify for the account/nick you set earlier? (y/n)")
+            config["IDENTIFY_ALL"] = yninput()
+            if config["IDENTIFY_ALL"] == True:
+                myprint("All bots will identify")
+            else:
+                myprint("Only the main bot will identify")
+    time.sleep(1)
     myprint("", 1)
     myprint(bcolors.OKCYAN + "Now to Discord! Please input the ID of the Discord server/guild that you've invited it to")
     myprint("It is a numerical ID, enable developer mode in Discord settings and copy the ID on the server's options" + bcolors.OFF)
@@ -276,6 +325,12 @@ if x:
         myprint(line)
         myprint("-")
 else:
+    for item in default_values:
+        if item not in config:
+            missing = 1
+            config[item] = default_values[item]
+        if missing == 1:
+            save_config()
     myprint("", 1)
     myprint("Do you want to edit any values in the config? y/n")
     x = yninput()
@@ -283,7 +338,6 @@ else:
         myprint("", 1)
         myprint("I will cycle through each item and ask you if you want to edit it!")
         for i in config:
-            myprint("", 1)
             item = i
             if item != "channel_sets":
                 value = config[i]
@@ -295,13 +349,15 @@ else:
                     x = input()
                     y = totype(value, x)
                     while type(y) == list and y[0] == "non_same_type":
-                        myprint("This is not an acceptable value for this setting. It should be", y[1])
+                        myprint("This is not an acceptable value for this setting. It should be " + y[1])
                         myprint(item + " = " + str(value))
                         y = totype(value, input())
                     x = y
                     if x != "":
                         config[item] = x
                     myprint(item + " = " + str(config[item]))
+            time.sleep(2)
+            myprint("", 1)
         myprint("", 1)
         myprint("Do you want to edit any of the channel sets?")
         x = yninput()

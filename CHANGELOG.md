@@ -1,4 +1,9 @@
-# September 24 2023
+# October 8th 2023
+- Added system that edits the last message instead of sending a new one (if it was sent by the main bot, i.e join/part/quit/kick messages)
+- Added NICKSERV identification - You will have to run setupwizard.py after pulling the updates and by choosing to edit the config you can set all the NICKSERV related info!
+- Fixed a bug where on start up, if a Discord user talked before all the IRC clients were connected the process stopped and hanged without doing nothing
+
+# September 24th 2023
 - If by any chance you were using the Bridge before this update you'll have to delete savedclients.pkl
   - As a result all the saved client info will be deleted and users will have to rejoin IRC
   - I would make it patch the file by adding all the channels to all the users' saved info but-
@@ -16,10 +21,10 @@
 - Fixed a few other minor bugs (part reasons were not relayed to Discord and other bugs/typos)
 - Removed forgotten prints that flooded the terminal buffer 
 
-# September 11 2023
+# September 11th 2023
 - Made the Discord bot's status change every 15 minutes to alternate versions
 
-# August 30 2023
+# August 30th 2023
 - Added a command cooldown system 
   - When a Discord user uses a command, a 10 second cooldown is enabled for them for this command
   - If a Discord user has an active cooldown for 3 commands a global cooldown is enabled for them
@@ -31,7 +36,7 @@
   - When the module fails, the message will (hopefully) be relayed as simple text. i.e `<john> hi there`
   - (hopefully because i wasn't able to recreate the error, will update if it happens again and doesn't work)
 
-# August 18 2023
+# August 18th 2023
 - Leaving the "Relay" term behind since this acts a lot more like a "Bridge" between IRC and Discord. Not just relaying in text e.g `<john> hi there`
 - Added multi-channel support
   - You can now have the Bridge work in multiple combinations of IRC and Discord Channels
@@ -42,11 +47,11 @@
 - Changed !relayuptime to !bridgeuptime
 - Fixed some slight color bugs in setupwizard.py
 
-# July 26 2023
+# July 26th 2023
 - hotfix for a lil bug
 - fixed italics not being shown on IRC messages
 
-# July 25 2023
+# July 25th 2023
 
 - Added the relaying of message edits to IRC. 
   - When a Discord user that has an IRC client edits one of their Discord messages it will be shown on IRC as: ```EDIT: their post-edit message will be here```
@@ -107,7 +112,6 @@ for a command
 - Added a setup wizard that makes or edits a config
 - The clients that are made will be saved and reconnected when the bot is restarted
 - The settings are now saved in a .pkl file and are not edited by hand
-- Added !rehash command to reload the config if you make any changes
 - Added 2 distinct modes of client creation. a) use of !joinirc command or b) automated client creation when a user sends a message.
 - Added a time limit to disconnect clients for inactivity (no messages sent for X amount of time)
 
