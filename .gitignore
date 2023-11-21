@@ -7,3 +7,4 @@ test_setupwizard.py
 test_config.pkl
 old_setupwizard.py
 old_config.pkl
+errors.log

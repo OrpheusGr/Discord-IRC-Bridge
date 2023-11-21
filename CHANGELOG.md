@@ -1,7 +1,13 @@
+# November 21 2023
+
+- Fixed some bugs that occured when the main bot was reconnecting
+- Unexpected disconnection error will only be sent in the channels the Discord user has joined and not all the channels the main bot is on
+- Added an exception handler to catch and log errors to stop major crashes and disconnects from happening. (too many IRC clients connecting/disonnecting at once is annoying and troublesome)
+
 # October 8th 2023
 - Added system that edits the last message instead of sending a new one (if it was sent by the main bot, i.e join/part/quit/kick messages)
 - Added NICKSERV identification - You will have to run setupwizard.py after pulling the updates and by choosing to edit the config you can set all the NICKSERV related info!
-- Fixed a bug where on start up, if a Discord user talked before all the IRC clients were connected the process stopped and hanged without doing nothing
+- Fixed a bug where on start up, if a Discord user talked before all the IRC clients were connected the process stopped and hanged without doing nothing.
 
 # September 24th 2023
 - If by any chance you were using the Bridge before this update you'll have to delete savedclients.pkl

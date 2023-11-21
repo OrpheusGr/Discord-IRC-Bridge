@@ -1,9 +1,11 @@
 from discord_webhook import DiscordWebhook
+from datetime import datetime
 import irc.client
 import time
 import re
 import settings
 import thetimers
+import os
 reactor = irc.client.Reactor()
 irc.client.ServerConnection.buffer_class.encoding = "utf-8"
 irc.client.ServerConnection.buffer_class.errors = "replace"
@@ -15,6 +17,11 @@ quitf = {}
 savedclients = {}
 channels_lists = {}
 join_delay = 0
+files_to_check = ["errors.log"]
+for file in files_to_check:
+    if os.path.isfile(file) == False:
+        open(file, 'w').close()
+
 
 # Load the config
 def load_the_config():
@@ -49,9 +56,19 @@ def startloop(nick, server, prt):
     global loopin
     loopin = 1
     while loopin:
-        reactor.process_once(0.2)
-        thetimers.check_timers()
-        time.sleep(0.2)
+        try:
+            reactor.process_once(0.2)
+            thetimers.check_timers()
+            time.sleep(0.2)
+        except Exception as err:
+            print("Error occured: " + str(err))
+            now = datetime.now()
+            dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+            log_string = dt_string + " " + str(err)
+            f = open("errors.log", "a")
+            f.write(log_string)
+            f.close()
+            pass
 
 def stoploop():
     global loopin
@@ -72,6 +89,12 @@ def momsendmsg(irc_chan, message):
 def sendtoboth(discord_chan, irc_chan, message):
     momsendmsg(irc_chan, message)
     discord.send_my_message(channel_sets[irc_chan]["real_chan"], message)
+
+def send_to_matching(nick, message):
+    for each_channel in channels_lists:
+        if nick in channels_lists[each_channel]:
+            if each_channel in channel_sets:
+                discord.send_my_message(channel_sets[each_channel]["real_chan"], message)
 
 def get_start_time():
     global start_time
@@ -171,7 +194,6 @@ def on_connectbot(connection, event):
     global channel
     global disconnectretries
     global join_delay
-    disconnectretries = 0
     if connection != mom:
         botdict[connection.get_nickname()] = connection.discordid
         ucon = discord.condict[connection.discordid]
@@ -205,8 +227,11 @@ def on_connectbot(connection, event):
         for item in channel_sets:
             mom_join_delay += 1
             thetimers.add_timer("", mom_join_delay, connection.join, item)
-        for client in discord.condict:
-            discord.condict[client].connect()
+        if disconnectretries == 0:
+            for client in discord.condict:
+                discord.condict[client].connect()
+        else:
+            disconnectretries = 0
         discord.setstatus()
 
 def unset_join_delay():
@@ -344,6 +369,10 @@ def on_quit(connection, event):
     global channel_sets
     if connection != mom:
          return
+    if discord.shutting_down == 1:
+         return
+    if connection.sent_quit != 1:
+         return
     for each_channel in channels_lists:
         if event.source.nick in channels_lists[each_channel]:
             if each_channel in channel_sets:
@@ -421,8 +450,8 @@ def on_nick(connection, event):
 def on_disconnect(connection, event):
     connection_name = connection.get_nickname()
     if connection == mom:
-        if momobj.sent_quit == 1:
-             momobj.sent_quit = 0
+        if connection.sent_quit == 1:
+             connection.sent_quit = 0
              return
         global disconnectretries
         disconnectretries += 1
@@ -437,8 +466,9 @@ def on_disconnect(connection, event):
         thetimers.add_timer("mom_reconn", 10, connection.reconnect)
         return
     if connection.sent_quit != 1:
-        discord.send_to_all("<@" + connection.discordid + ">" + " Unexpectedly disconnected from " + event.source + " " + event.arguments[0])
+        send_to_matching(connection_name, "<@" + connection.discordid + ">" + " Unexpectedly disconnected from " + event.source + " " + event.arguments[0])
     if connection.discordid in discord.condict:
+        #print(connection.discordid)
         obj = discord.condict[connection.discordid]
         del obj
         discord.condict.pop(connection.discordid)
@@ -462,7 +492,7 @@ class IRCbots():
         self.port = prt
         self.conn = reactor.server()
         self.lastmsg = round(time.time(),0)
-        self.sent_quit = 0
+        self.conn.sent_quit = 0
         self.myprivmsg_line = ""
         #print(self.nick, discordid)
         if discordid:
@@ -511,7 +541,7 @@ class IRCbots():
                 connection.disconnect("Client killed for inactivity")
 
     def sent_quit_on(self):
-        self.sent_quit = 1
+        self.conn.sent_quit = 1
 
     def get_myprivmsg_line(self, channel):
         return self.myprivmsg_line + " " + channel + " :"

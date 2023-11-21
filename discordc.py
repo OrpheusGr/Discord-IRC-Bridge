@@ -1,5 +1,6 @@
 # Imports
 import discord
+from discord.ext import commands
 import asyncio
 import re
 import time
@@ -31,6 +32,7 @@ lastmsg = {}
 sendmymsg_lastcall = 0
 sendmymsg_delay = 0
 
+
 for i in cmdlist:
     cooldown[i] = {}
 cooldown["globalcool"] = {}
@@ -55,7 +57,7 @@ Intents = discord.Intents.all()
 Intents.members = True
 Intents.messages = True
 Intents.presences = True
-client = discord.Client(intents=Intents)
+bot = commands.Bot(command_prefix="!", intents=Intents)
 
 def get_urls(attach):
     urls = ""
@@ -141,7 +143,7 @@ def replace_emojis(content):
 def setstatus():
     global statusindex
     c_status = statuses[statusindex]
-    asyncio.run_coroutine_threadsafe(setstatus_async(c_status), client.loop)
+    asyncio.run_coroutine_threadsafe(setstatus_async(c_status), bot.loop)
     if statusindex < len(statuses)-1:
         statusindex += 1
     else:
@@ -169,16 +171,16 @@ def send_my_message(discord_chan, message):
     sendmymsg_lastcall = ctime
 
 def send_my_message_b(discord_chan, message):
-    global client
+    global bot
     global lastmsg
     chanid = str(discord_chan.id)
     if chanid in lastmsg:
         lastmsgchan = lastmsg[chanid]
     else:
         lastmsgchan = None
-    if lastmsgchan == None or str(lastmsgchan.author.id) != str(client.user.id) or (lastmsgchan.clean_content == "**Bridge is now running!**" and str(lastmsgchan.author.id) == str(client.user.id)):
-        asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, message), client.loop)
-    elif lastmsgchan != None and str(lastmsgchan.author.id) == str(client.user.id):
+    if lastmsgchan == None or str(lastmsgchan.author.id) != str(bot.user.id) or (lastmsgchan.clean_content == "**Bridge is now running!**" and str(lastmsgchan.author.id) == str(bot.user.id)):
+        asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, message), bot.loop)
+    elif lastmsgchan != None and str(lastmsgchan.author.id) == str(bot.user.id):
         editedmsg = lastmsgchan.content + " | " + message
         if "[R] joined" in lastmsgchan.clean_content:
             if "[R] joined" in message and classcon.get_uptime(True) <= 120:
@@ -188,20 +190,20 @@ def send_my_message_b(discord_chan, message):
                     jointitle = ""
                 editedmsg = jointitle + editedmsg
             elif "[R] joined" not in message:
-                asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, message), client.loop)
+                asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, message), bot.loop)
                 return
         else:
             if (lastmsgchan.content[0:4] in ["-> *", "<- *"] and message[0:4] not in ["-> *", "<- *"]) or (message[0:4] in ["-> *", "<- *"] and lastmsgchan.content[0:4] not in ["-> *", "<- *"]):
-                asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, message), client.loop)
+                asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, message), bot.loop)
                 return
             if message[0:4] in ["-> *", "<- *"]:
                 message = " ".join(message.split()[1:3]) + "**"
                 editedmsg = lastmsgchan.content + " | " + message
         if len(editedmsg) > 1980:
-            asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, "-"), client.loop)
-            asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, message), client.loop)
+            asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, "-"), bot.loop)
+            asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, message), bot.loop)
             return
-        asyncio.run_coroutine_threadsafe(edit_my_message_async(lastmsgchan, editedmsg), client.loop)
+        asyncio.run_coroutine_threadsafe(edit_my_message_async(lastmsgchan, editedmsg), bot.loop)
 
 def send_to_all(message):
     for item in channel_sets:
@@ -215,7 +217,7 @@ def shutdown(reason="", exiting=False):
     quitall(reason, exiting)
 
 def die():
-    asyncio.run_coroutine_threadsafe(shutdown_async(), client.loop)
+    asyncio.run_coroutine_threadsafe(shutdown_async(), bot.loop)
     classcon.stoploop()
 
 def quitall(reason, exiting):
@@ -234,7 +236,7 @@ def quitall(reason, exiting):
     uptime = classcon.get_uptime()
     if exiting == False:
         thetimers.add_timer("", timesleep+1, classcon.mom.disconnect, "Bridge is shutting down after running for " + uptime + " " + reason)
-        asyncio.run_coroutine_threadsafe(do_async_stuff(die, timesleep + 3), client.loop)
+        asyncio.run_coroutine_threadsafe(do_async_stuff(die, timesleep + 3), bot.loop)
     else:
         classcon.mom.disconnect("Bridge is shutting down after running for " + uptime + " " + reason)
 
@@ -247,7 +249,7 @@ async def edit_my_message_async(msg_object, edit):
     await msg_object.edit(content=edit)
 
 def is_member(id):
-    guild = client.get_guild(int(DISCORDSERVER))
+    guild = bot.get_guild(int(DISCORDSERVER))
     member = guild.get_member(int(id))
     return member
 
@@ -261,22 +263,22 @@ def check_global_cooldown(authorid):
     return foundincool
 
 async def setstatus_async(status):
-    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=status))
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=status))
 
 async def shutdown_async():
     await asyncio.sleep(2)
-    await client.close()
+    await bot.close()
 
 async def do_async_stuff(target, delay, *arguments):
     await asyncio.sleep(delay)
     target(*arguments)
 
-@client.event
+@bot.event
 async def on_message_edit(before, after):
     global channel
     global condict
     # Certain conditions on which we don't want the bot to act
-    if before.author == client.user:
+    if before.author == bot.user:
         return
     if str(before.channel.id) not in channel_sets:
         return
@@ -291,7 +293,7 @@ async def on_message_edit(before, after):
         if beforecontent != aftercontent:
             condict[authorid].sendmsg(irc_chan, "EDIT: " + ircdressup(aftercontent))
 
-@client.event
+@bot.event
 async def on_presence_update(before, after):
     userid = str(after.id)
     dname = after.display_name
@@ -303,7 +305,7 @@ async def on_presence_update(before, after):
             awayline = "Discord Status: " + after.raw_status
             ucon.set_away(awayline)
 
-@client.event
+@bot.event
 async def on_message(message):
     global thread_lock
     global condict
@@ -325,7 +327,7 @@ async def on_message(message):
     lastmsg[channel_id] = message
 
     # Certain conditions on which we don't want the bot to act
-    if message.author == client.user:
+    if message.author == bot.user:
         return
     if channel_id not in channel_sets:
         return
@@ -420,6 +422,8 @@ async def on_message(message):
                 cooldown["globalcool"][authorid] = 1
                 thetimers.add_timer("", 60, cooldown["globalcool"].pop, authorid)
 
+    # NOTE: add DM command !config to edit the config here
+
     # This is a message catcher, it comes before all the other commands cause it's responsible for making and connecting an IRC client for the user that just sent a message
     # This only gets triggeted if you enable the AUTOCLIENTS setting when running setupwizard.py to create or edit the config
 
@@ -498,7 +502,7 @@ async def on_message(message):
 
         #fjoinirc command - Makes a client for another user
         elif cmd == "!fjoinirc":
-            if idarg == str(client.user.id):
+            if idarg == str(bot.user.id):
                 send_my_message(message.channel, "You can't make an IRC client for me!")
                 return
             if idarg == "":
@@ -798,9 +802,9 @@ async def on_message(message):
         print("[Discord] " + message.channel.name + " > " + irc_chan + " " + message.author.name + ": " + content)
 
 def run():
-    client.run(TOKEN)
+    bot.run(TOKEN)
 
-@client.event
+@bot.event
 async def on_ready():
     global channel_sets
     global thread_lock
@@ -809,31 +813,31 @@ async def on_ready():
 
     with thread_lock:
         print("[Discord] Logged in as:")
-        print("[Discord] " + client.user.name)
-        print("[Discord] " + str(client.user.id))
+        print("[Discord] " + bot.user.name)
+        print("[Discord] " + str(bot.user.id))
 
-        if len(client.guilds) == 0:
+        if len(bot.guilds) == 0:
             print("[Discord] Bot is not yet in any server.")
-            await client.close()
+            await bot.close()
             return
 
         if DISCORDSERVER == "":
             print("[Discord] You have not configured a server to use in the config, please run: python3 setupwizard.py")
             print("[Discord] Input one of the ID's below when you are asked for the Discord Server ID")
 
-            for server in client.guilds:
+            for server in bot.guilds:
                 print("[Discord] %s: %s" % (server.name, server.id))
 
-            await client.close()
+            await bot.close()
             return
 
-        findServer = [x for x in client.guilds if str(x.id) == DISCORDSERVER]
+        findServer = [x for x in bot.guilds if str(x.id) == DISCORDSERVER]
         if not len(findServer):
             print("[Discord] No server could be found with the specified id: " + DISCORDSERVER)
             print("[Discord] Available servers:")
-            for server in client.guilds:
+            for server in bot.guilds:
                 print("[Discord] %s: %s" % (server.name, server.id))
-            await client.close()
+            await bot.close()
             return
 
         server = findServer[0]
@@ -845,7 +849,7 @@ async def on_ready():
                 if channel.type == discord.ChannelType.text:
                     print("[Discord] %s: %s" % (channel.name, channel.id))
 
-            await client.close()
+            await bot.close()
             return
 
         for item in channel_sets:
@@ -860,7 +864,7 @@ async def on_ready():
                         print("[Discord] %s: %s" % (channel.name, channel.id))
 
                 print("You can edit this channel set by running setupwizard.py")
-                await client.close()
+                await bot.close()
                 return
             channel_sets[item]["real_chan"] = findChannel[0]
     classcon.set_channel_sets(channel_sets)
