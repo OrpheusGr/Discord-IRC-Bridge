@@ -6,6 +6,7 @@ import re
 import settings
 import thetimers
 import os
+import logging
 reactor = irc.client.Reactor()
 irc.client.ServerConnection.buffer_class.encoding = "utf-8"
 irc.client.ServerConnection.buffer_class.errors = "replace"
@@ -17,10 +18,12 @@ quitf = {}
 savedclients = {}
 channels_lists = {}
 join_delay = 0
-files_to_check = ["errors.log"]
-for file in files_to_check:
-    if os.path.isfile(file) == False:
-        open(file, 'w').close()
+lastchannel_irc_disc = ""
+logging.basicConfig(filename="errors.log",
+                    filemode='a',
+                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                    datefmt='%H:%M:%S',
+                    level=logging.ERROR)
 
 
 # Load the config
@@ -61,14 +64,8 @@ def startloop(nick, server, prt):
             thetimers.check_timers()
             time.sleep(0.2)
         except Exception as err:
-            print("Error occured: " + str(err))
-            now = datetime.now()
-            dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-            log_string = dt_string + " " + str(err)
-            f = open("errors.log", "a")
-            f.write(log_string)
-            f.close()
-            pass
+            sendtolastchannel("An error has occured and has been logged. Check errors.log for more info.")
+            logging.exception('Caught an error')
 
 def stoploop():
     global loopin
@@ -90,11 +87,25 @@ def sendtoboth(discord_chan, irc_chan, message):
     momsendmsg(irc_chan, message)
     discord.send_my_message(channel_sets[irc_chan]["real_chan"], message)
 
+def sendtolastchannel(message):
+    if type(lastchannel_irc_disc) == str:
+        momsendmsg(lastchannel_irc_disc, message)
+    else:
+        discord.send_my_message(lastchannel_irc_disc, message)
+
 def send_to_matching(nick, message):
     for each_channel in channels_lists:
         if nick in channels_lists[each_channel]:
+            #print(each_channel, "->", channels_lists[each_channel])
             if each_channel in channel_sets:
+                #print("isinchannelsets")
                 discord.send_my_message(channel_sets[each_channel]["real_chan"], message)
+
+def pop_from_channels(nick):
+    for each_channel in channels_lists:
+        if nick in channels_lists[each_channel]:
+            if each_channel in channel_sets:
+                channels_lists[each_channel].pop(nick)
 
 def get_start_time():
     global start_time
@@ -250,6 +261,8 @@ def on_pubmsg(connection, event):
     global botdict
     global discord
     global thread_lock
+    lastchannel_irc_disc = event.target
+    discord.lastchannel_irc_disc = event.target
     if len(event.arguments[0].split()) == 0:
         return
     if event.target not in channel_sets:
@@ -360,33 +373,25 @@ def on_part(connection, event):
             reason = "(" + event.arguments[0] + ")"
         else:
             reason = ""
-        discord.send_my_message(discord_chan, "<- **" + event.source.nick + " left " + event.target + reason + "**")
+        discord.send_my_message(discord_chan, "<- **" + event.source.nick + " left " + event.target + " " + reason + "**")
     else:
         connection.join(channel)
 
 def on_quit(connection, event):
     global channels_lists
     global channel_sets
+    connection_name = connection.get_nickname()
     if connection != mom:
-         return
+        return
     if discord.shutting_down == 1:
-         return
-    if connection.sent_quit != 1:
-         return
-    for each_channel in channels_lists:
-        if event.source.nick in channels_lists[each_channel]:
-            if each_channel in channel_sets:
-                if event.arguments[0]:
-                    reason = "(" + event.arguments[0] + ")"
-                else:
-                    reason = ""
-                discord.send_my_message(channel_sets[each_channel]["real_chan"], "<- **" + event.source.nick + " quit " + network + " " + reason + "**")
-            channels_lists[each_channel].pop(event.source.nick)
-    #print(channels_lists)
+        return
     if event.arguments[0]:
-         reason = "(" + event.arguments[0] + ")"
+        reason = "(" + event.arguments[0] + ")"
     else:
-         reason = ""
+        reason = ""
+    send_to_matching(event.source.nick, "<- **" + event.source.nick + " quit " + network + " " + reason + "**")
+    pop_from_channels(event.source.nick)
+    #print(channels_lists)
 
 def on_kick(connection, event):
     global channels_lists
@@ -482,8 +487,8 @@ def on_error(connection, event):
 def on_privmsg(connection, event):
     print(event.source.nick, event.arguments[0])
 
-def on_privnotice(connection, event):
-    print(event.source.nick, event.arguments[0])
+#def on_privnotice(connection, event):
+ #   print(event.source.nick, event.arguments[0])
 
 class IRCbots():
     def __init__(self, nik, srv, prt, channels, mom=False, wh=None, discordid=None):
@@ -506,10 +511,12 @@ class IRCbots():
             self.conn.sent_quit = 0
             if discordid not in savedclients:
                 savedclients[discordid] = {}
-            savedclients[discordid]["nick"] = self.nick
-            savedclients[discordid]["channels"] = channels
-            settings.saveclients(savedclients)
-            self.conn.channels = channels
+                savedclients[discordid]["nick"] = self.nick
+                savedclients[discordid]["channels"] = channels
+                settings.saveclients(savedclients)
+                self.conn.channels = channels
+            else:
+                self.conn.channels = savedclients[discordid]["channels"]
 
     def connect(self):
         c = self.conn.connect(self.server, self.port, self.nick, None, "Discord", self.conn.discordid)
@@ -529,7 +536,7 @@ class IRCbots():
             c.add_global_handler("error", on_error)
             c.add_global_handler("whoreply", on_whoreply)
             c.add_global_handler("privmsg", on_privmsg)
-            c.add_global_handler("privnotice", on_privnotice)
+            #c.add_global_handler("privnotice", on_privnotice)
 
     def on_ping(self, connection, event):
         if connection == mom:

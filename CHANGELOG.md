@@ -1,7 +1,13 @@
+# December 16 2023 
+
+- Fixed a bug created by the last update
+- Scrapped the limited makeshift logging thing from last update and used Python's logging module for proper error handling and logging
+- Fixed some typos
+
 # November 21 2023
 
 - Fixed some bugs that occured when the main bot was reconnecting
-- Unexpected disconnection error will only be sent in the channels the Discord user has joined and not all the channels the main bot is on
+- Unexpected disconnection error as well as quit messages will only be sent in the channels the Discord user has joined and not all the channels the main bot is on
 - Added an exception handler to catch and log errors to stop major crashes and disconnects from happening. (too many IRC clients connecting/disonnecting at once is annoying and troublesome)
 
 # October 8th 2023

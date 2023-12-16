@@ -13,6 +13,7 @@ import sys
 import random
 import thetimers
 import atexit
+import logging
 condict = {}
 killed = {}
 leftirc = {}
@@ -31,7 +32,12 @@ timesleep = 0
 lastmsg = {}
 sendmymsg_lastcall = 0
 sendmymsg_delay = 0
-
+lastchannel_disc_irc = ""
+logging.basicConfig(filename="errors.log",
+                    filemode='a',
+                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                    datefmt='%H:%M:%S',
+                    level=logging.ERROR)
 
 for i in cmdlist:
     cooldown[i] = {}
@@ -317,6 +323,9 @@ async def on_message(message):
 
     if uptime <= 20:
         return
+
+    lastchannel_irc_disc = message.channel
+    classcon.lastchannel_irc_disc = message.channel
 
     checknick = False
     ref = ""

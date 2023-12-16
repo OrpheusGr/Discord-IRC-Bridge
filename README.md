@@ -59,6 +59,11 @@ https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permission
   - !leaveirc Disconnects the Discord User's IRC client
   - !leavechan Discord User's IRC client leaves the matching IRC channel
 
+## Stuff that will be added at some point when i'm less busy
+
+- DM !config command to edit values of the config without needing to restart the bot (with some exceptions such as  changing IRC or Discord servers)
+- More ideas that i'm forgetting right now.
+
 ## Setting up and running 
 - Before starting the bot you need to `python3 setupwizard.py` to make a config file for the bot.
 - When you're done with the setup wizard, launch the bot using `python3 main.py`.
