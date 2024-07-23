@@ -3,8 +3,7 @@ manual_config_update.py
 config.pkl
 savedclients.pkl
 somefiletoignoretest.txt
-test_setupwizard.py
-test_config.pkl
+test*
 old_setupwizard.py
 old_config.pkl
 errors.log
