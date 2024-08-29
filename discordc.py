@@ -33,11 +33,7 @@ lastmsg = {}
 sendmymsg_lastcall = 0
 sendmymsg_delay = 0
 lastchannel_disc_irc = ""
-logging.basicConfig(filename="errors.log",
-                    filemode='a',
-                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-                    datefmt='%H:%M:%S',
-                    level=logging.ERROR)
+handler = logging.FileHandler(filename='discordc_errors.log', encoding='utf-8', mode='w')
 
 for i in cmdlist:
     cooldown[i] = {}
@@ -179,6 +175,7 @@ def send_my_message(discord_chan, message):
 def send_my_message_b(discord_chan, message):
     global bot
     global lastmsg
+    orig_message = message
     chanid = str(discord_chan.id)
     if chanid in lastmsg:
         lastmsgchan = lastmsg[chanid]
@@ -205,9 +202,10 @@ def send_my_message_b(discord_chan, message):
             if message[0:4] in ["-> *", "<- *"]:
                 message = " ".join(message.split()[1:3]) + "**"
                 editedmsg = lastmsgchan.content + " | " + message
-        if len(editedmsg) > 1980:
-            asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, "-"), bot.loop)
-            asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, message), bot.loop)
+        if len(editedmsg) > 350:
+            asyncio.run_coroutine_threadsafe(edit_my_message_async(lastmsgchan, "[...]" + orig_message), bot.loop)
+            #asyncio.run_coroutine_threadsafe(del_my_message_async(lastmsgchan), bot.loop)
+            #asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, orig_message), bot.loop)
             return
         asyncio.run_coroutine_threadsafe(edit_my_message_async(lastmsgchan, editedmsg), bot.loop)
 
@@ -245,6 +243,7 @@ def quitall(reason, exiting):
         asyncio.run_coroutine_threadsafe(do_async_stuff(die, timesleep + 3), bot.loop)
     else:
         classcon.mom.disconnect("Bridge is shutting down after running for " + uptime + " " + reason)
+        bot.logout()
 
 atexit.register(shutdown, "Bridge killed from Terminal", True)
 
@@ -253,6 +252,9 @@ async def send_my_message_async(discord_chan, message):
 
 async def edit_my_message_async(msg_object, edit):
     await msg_object.edit(content=edit)
+
+async def del_my_message_async(msg_object):
+    await msg_object.delete()
 
 def is_member(id):
     guild = bot.get_guild(int(DISCORDSERVER))
@@ -591,6 +593,7 @@ async def on_message(message):
                 return
             ucon.nick(urequest + "[R]")
             classcon.savedclients.pop(idarg)
+            classcon.savedclients[idarg] = {}
             classcon.savedclients[idarg]["nick"] = urequest + "[R]"
             settings.saveclients(classcon.savedclients)
             return
@@ -811,7 +814,7 @@ async def on_message(message):
         print("[Discord] " + message.channel.name + " > " + irc_chan + " " + message.author.name + ": " + content)
 
 def run():
-    bot.run(TOKEN)
+    bot.run(TOKEN, log_handler=handler, log_level=logging.ERROR)
 
 @bot.event
 async def on_ready():

@@ -2,6 +2,18 @@ import threading
 import sys
 import discordc
 import classcon
+import logging
+
+logger_classcon = logging.getLogger('classcon')
+logger_classcon.setLevel(logging.ERROR)
+
+# Create a FileHandler for logging to a file
+file_handler = logging.FileHandler('classcon_errors.log')  # Log to this file
+file_handler.setLevel(logging.ERROR)
+
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+logger_classcon.addHandler(file_handler)
 
 thread_lock = threading.Lock()
 

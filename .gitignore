@@ -7,3 +7,5 @@ test*
 old_setupwizard.py
 old_config.pkl
 errors.log
+.bash*
+*errors.log

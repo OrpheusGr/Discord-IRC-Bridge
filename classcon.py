@@ -19,12 +19,8 @@ savedclients = {}
 channels_lists = {}
 join_delay = 0
 lastchannel_irc_disc = ""
-logging.basicConfig(filename="errors.log",
-                    filemode='a',
-                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-                    datefmt='%H:%M:%S',
-                    level=logging.ERROR)
 
+logger = logging.getLogger(__name__)
 
 # Load the config
 def load_the_config():
@@ -64,8 +60,8 @@ def startloop(nick, server, prt):
             thetimers.check_timers()
             time.sleep(0.2)
         except Exception as err:
-            sendtolastchannel("An error has occured and has been logged. Check errors.log for more info.")
-            logging.exception('Caught an error')
+            #sendtolastchannel("An error has occured and has been logged. Check errors.log for more info.")
+            logger.exception('Caught an error')
 
 def stoploop():
     global loopin
