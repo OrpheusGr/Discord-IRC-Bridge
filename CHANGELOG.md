@@ -3,6 +3,7 @@
 - Fixed a bug in !fnick
 - Made logging work seperately for classcon.py and discordc.py
 - Adjusted the join/part/quit system to clean the messages and started from the latest event instead of leaving a huge wall of text behind and starting another
+- Small adjustments
 
 # December 16 2023 
 

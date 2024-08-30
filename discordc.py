@@ -196,14 +196,14 @@ def send_my_message_b(discord_chan, message):
                 asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, message), bot.loop)
                 return
         else:
-            if (lastmsgchan.content[0:4] in ["-> *", "<- *"] and message[0:4] not in ["-> *", "<- *"]) or (message[0:4] in ["-> *", "<- *"] and lastmsgchan.content[0:4] not in ["-> *", "<- *"]):
+            if (lastmsgchan.content[0:4] in ["-> *", "<- *"] and message[0:4] not in ["-> *", "<- *"]) or (message[0:4] in ["-> *", "<- *"] and lastmsgchan.content[0:4] not in ["-> *", "<- *"]) and lastmsgchan.content[0:5] != "[...]":
                 asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, message), bot.loop)
                 return
-            if message[0:4] in ["-> *", "<- *"]:
+            if message[0:4] in ["-> *", "<- *"] or message[0:4] == "[...]":
                 message = " ".join(message.split()[1:3]) + "**"
                 editedmsg = lastmsgchan.content + " | " + message
         if len(editedmsg) > 350:
-            asyncio.run_coroutine_threadsafe(edit_my_message_async(lastmsgchan, "[...]" + orig_message), bot.loop)
+            asyncio.run_coroutine_threadsafe(edit_my_message_async(lastmsgchan, "[...] " + orig_message), bot.loop)
             #asyncio.run_coroutine_threadsafe(del_my_message_async(lastmsgchan), bot.loop)
             #asyncio.run_coroutine_threadsafe(send_my_message_async(discord_chan, orig_message), bot.loop)
             return
@@ -243,7 +243,6 @@ def quitall(reason, exiting):
         asyncio.run_coroutine_threadsafe(do_async_stuff(die, timesleep + 3), bot.loop)
     else:
         classcon.mom.disconnect("Bridge is shutting down after running for " + uptime + " " + reason)
-        bot.logout()
 
 atexit.register(shutdown, "Bridge killed from Terminal", True)
 
