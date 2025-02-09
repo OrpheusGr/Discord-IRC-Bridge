@@ -257,16 +257,16 @@ def on_pubmsg(connection, event):
     global botdict
     global discord
     global thread_lock
-    lastchannel_irc_disc = event.target
-    discord.lastchannel_irc_disc = event.target
+    lastchannel_irc_disc = event.target.lower()
+    discord.lastchannel_irc_disc = event.target.lower()
     if len(event.arguments[0].split()) == 0:
         return
-    if event.target not in channel_sets:
+    if event.target.lower() not in channel_sets:
         return
     if connection != mom:
         return
-    discord_chan = channel_sets[event.target]["real_chan"]
-    webhooklink = channel_sets[event.target]["webhook"]
+    discord_chan = channel_sets[event.target.lower()]["real_chan"]
+    webhooklink = channel_sets[event.target.lower()]["webhook"]
     sender = event.source.nick
     if sender in botdict:
         return
@@ -279,7 +279,7 @@ def on_pubmsg(connection, event):
     #public commands block
     if cmd == "!bridgeuptime":
         uptime = get_uptime()
-        sendtoboth(discord_chan, event.target, "I've been running for " + uptime)
+        sendtoboth(discord_chan, event.target.lower(), "I've been running for " + uptime)
     for i in range(len(message)):
         msgi = message[i]
         msgii = msgi[:-1]
@@ -291,7 +291,7 @@ def on_pubmsg(connection, event):
     if event.type == "action":
         finalmsg = "*" + finalmsg + "*"
     with thread_lock:
-        print("[IRC]", discord_chan, ">", event.target, sender, ":", finalmsg)
+        print("[IRC]", discord_chan, ">", event.target.lower(), sender, ":", finalmsg)
     try:
         webhook = DiscordWebhook(url=webhooklink, content=finalmsg, username=sender + " [IRC]")
         response = webhook.execute()
@@ -327,16 +327,16 @@ def on_join(connection, event):
     global mom
     global discord
     connection_name = connection.get_nickname()
-    if event.target not in channel_sets:
+    if event.target.lower() not in channel_sets:
         connection.part(event.target)
         return
     if connection != mom:
         return
-    discord_chan = channel_sets[event.target]["real_chan"]
+    discord_chan = channel_sets[event.target.lower()]["real_chan"]
     if connection_name != event.source.nick:
-        if event.target not in channels_lists:
-            channels_lists[event.target] = {}
-        channels_lists[event.target][event.source.nick] = {"host": event.source.host}
+        if event.target.lower() not in channels_lists:
+            channels_lists[event.target.lower()] = {}
+        channels_lists[event.target.lower()][event.source.nick] = {"host": event.source.host}
         #print(channels_lists)
         if event.source.nick in botdict:
             did = botdict[event.source.nick]
@@ -357,13 +357,13 @@ def on_join(connection, event):
 
 def on_part(connection, event):
     global channels_lists
-    if event.target not in channel_sets:
+    if event.target.lower() not in channel_sets:
         return
     if connection != mom:
         return
-    discord_chan = channel_sets[event.target]["real_chan"]
+    discord_chan = channel_sets[event.target.lower()]["real_chan"]
     if connection.get_nickname() != event.source.nick:
-        channels_lists[event.target].pop(event.source.nick)
+        channels_lists[event.target.lower()].pop(event.source.nick)
         #print(channels_lists)
         if len(event.arguments) > 0:
             reason = "(" + event.arguments[0] + ")"
@@ -393,11 +393,11 @@ def on_kick(connection, event):
     global channels_lists
     nick = event.source.nick
     knick = event.arguments[0]
-    if event.target not in channel_sets:
+    if event.target.lower() not in channel_sets:
         return
-    discord_chan = channel_sets[event.target]["real_chan"]
+    discord_chan = channel_sets[event.target.lower()]["real_chan"]
     if connection == mom:
-        channels_lists[event.target].pop(knick)
+        channels_lists[event.target.lower()].pop(knick)
         #print(channels_lists)
         try:
             extras = "(" + event.arguments[1] + ")"
@@ -428,7 +428,7 @@ def on_nick(connection, event):
         return
     nick = event.source.nick
     host = event.source.host
-    newnick = event.target
+    newnick = event.target.lower()
     if nick in botdict:
         x = botdict[nick]
         botdict.pop(nick)

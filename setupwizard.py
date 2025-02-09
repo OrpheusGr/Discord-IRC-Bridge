@@ -305,6 +305,7 @@ if x:
         myprint("", 1)
         myprint(bcolors.OKCYAN + "Ok and now we just need the IRC channel name for this channel set." + bcolors.OFF)
         irc_chan = input("IRC channel: ")
+        irc_chan = irc_chan.lower()
         if irc_chan[0] != "#":
             irc_chan = "#" + irc_chan
         config["channel_sets"][discordchan] = {"webhook": webhook, "irc_chan": irc_chan}
@@ -439,6 +440,7 @@ else:
                 myprint("", 1)
                 myprint(bcolors.OKCYAN + "Ok and now we just need the IRC channel name for this channel set." + bcolors.OFF)
                 irc_chan = input("IRC channel: ")
+                irc_chan = irc_chan.lower()
                 if irc_chan[0] != "#":
                     irc_chan = "#" + irc_chan
                 config["channel_sets"][discordchan] = {"webhook": webhook, "irc_chan": irc_chan}
