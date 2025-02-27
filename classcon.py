@@ -27,6 +27,14 @@ def load_the_config():
     global savedclients
     config = settings.load_config()
     savedclients = settings.load_saved_clients()
+    # clean up the saved channels in the savedclients in case we deleted a channel set or more with the wizard
+    temp_list = []
+    for i in config["channel_sets"]:
+        temp_list.append(config["channel_sets"][i]["irc_chan"])
+    for j in savedclients:
+        for k in savedclients[j]["channels"]:
+            if k not in temp_list:
+                savedclients[j]["channels"].remove(k)
     if config == False:
         sys.exit(0)
     else:
@@ -202,7 +210,7 @@ def on_connectbot(connection, event):
     global disconnectretries
     global join_delay
     if connection != mom:
-        botdict[connection.get_nickname()] = connection.discordid
+        botdict[connection.get_nickname().lower()] = connection.discordid
         ucon = discord.condict[connection.discordid]
         if IDENTIFY_ALL == True and NICKSERV_PASS != "":
             if NICKSERV_ACCOUNT != "":
@@ -268,7 +276,7 @@ def on_pubmsg(connection, event):
     discord_chan = channel_sets[event.target.lower()]["real_chan"]
     webhooklink = channel_sets[event.target.lower()]["webhook"]
     sender = event.source.nick
-    if sender in botdict:
+    if sender.lower() in botdict:
         return
     host = event.source.host
     messagenot = IrcToDiscText(event.arguments[0])
@@ -281,8 +289,8 @@ def on_pubmsg(connection, event):
         uptime = get_uptime()
         sendtoboth(discord_chan, event.target.lower(), "I've been running for " + uptime)
     for i in range(len(message)):
-        msgi = message[i]
-        msgii = msgi[:-1]
+        msgi = message[i].lower()
+        msgii = msgi[:-1].lower()
         ml = [msgi, msgii]
         check_dict = [msgi in botdict, msgii in botdict]
         if any(check_dict):
@@ -338,8 +346,8 @@ def on_join(connection, event):
             channels_lists[event.target.lower()] = {}
         channels_lists[event.target.lower()][event.source.nick] = {"host": event.source.host}
         #print(channels_lists)
-        if event.source.nick in botdict:
-            did = botdict[event.source.nick]
+        if event.source.nick.lower() in botdict:
+            did = botdict[event.source.nick.lower()]
             conobj = discord.condict[did]
             conobj.myprivmsg_line = event.source + " PRIVMSG"
         discord.send_my_message(discord_chan, "-> **" + event.source.nick + " joined " + event.target + "**")
@@ -429,10 +437,10 @@ def on_nick(connection, event):
     nick = event.source.nick
     host = event.source.host
     newnick = event.target.lower()
-    if nick in botdict:
-        x = botdict[nick]
-        botdict.pop(nick)
-        botdict[newnick] = x
+    if nick.lower() in botdict:
+        x = botdict[nick.lower()]
+        botdict.pop(nick.lower())
+        botdict[newnick.lower()] = x
         conobj = discord.condict[x]
         conobj.myprivmsg_line = newnick + "".join(event.source.split("!")[1:]) + " PRIVMSG"
     else:
@@ -474,7 +482,7 @@ def on_disconnect(connection, event):
         del obj
         discord.condict.pop(connection.discordid)
     cn = connection.get_nickname()
-    if cn in botdict:
+    if cn.lower() in botdict:
         botdict.pop(cn)
 
 def on_error(connection, event):

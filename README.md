@@ -71,8 +71,8 @@ https://discordapp.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot&permission
 - When new settings are added with updates they will be added to your config with default values when you start the bot or when you can run the setupwizard, which you can also use to edit those values.
 
 ## For any suggestions, questions or to say hi!
-- Come chat with me/us on IRC at IrCQchat #Discord-IRC-Bridge . Through the [webclient](https://ircq.chat/)
-- Or through your IRC client: ircqchat.com 6667 #Discord-IRC-Bridge
+- Come chat with me/us on IRC at IrCQchat #Discord-IRC-Bridge . Through the [webclient](http://icqchat.us/)
+- Or through your IRC client: icqchwt.us: 6667 #Discord-IRC-Bridge
 
 ## License
 

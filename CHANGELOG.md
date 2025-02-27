@@ -1,3 +1,7 @@
+# February 27th 2025
+
+- Fixed a bug that occured when a channel_set was removed where clients would still join it upon connection and leave it instantly.
+
 # August 29th 2024
 
 - Fixed a bug in !fnick
