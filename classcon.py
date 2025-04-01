@@ -483,7 +483,7 @@ def on_disconnect(connection, event):
         discord.condict.pop(connection.discordid)
     cn = connection.get_nickname()
     if cn.lower() in botdict:
-        botdict.pop(cn)
+        botdict.pop(cn.lower())
 
 def on_error(connection, event):
     print(event.source, event.arguments)
