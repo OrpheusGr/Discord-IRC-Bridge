@@ -324,7 +324,7 @@ def on_whoreply(connection, event):
     host = event.arguments[2]
     nick = event.arguments[4]
     #realname = event.arguments[6].split()[1]
-    channel = event.arguments[0]
+    channel = event.arguments[0].lower()
     if channel not in channels_lists:
         channels_lists[channel] = {}
     channels_lists[channel][nick] = {"host": host}
@@ -371,7 +371,8 @@ def on_part(connection, event):
         return
     discord_chan = channel_sets[event.target.lower()]["real_chan"]
     if connection.get_nickname() != event.source.nick:
-        channels_lists[event.target.lower()].pop(event.source.nick)
+        if event.source.nick in channels_lists[event.target.lower()]:
+            channels_lists[event.target.lower()].pop(event.source.nick)
         #print(channels_lists)
         if len(event.arguments) > 0:
             reason = "(" + event.arguments[0] + ")"
@@ -405,7 +406,8 @@ def on_kick(connection, event):
         return
     discord_chan = channel_sets[event.target.lower()]["real_chan"]
     if connection == mom:
-        channels_lists[event.target.lower()].pop(knick)
+        if knick in channels_lists[event.target.lower()]:
+            channels_lists[event.target.lower()].pop(knick)
         #print(channels_lists)
         try:
             extras = "(" + event.arguments[1] + ")"
@@ -489,7 +491,7 @@ def on_error(connection, event):
     print(event.source, event.arguments)
 
 def on_privmsg(connection, event):
-    print(event.source.nick, event.arguments[0])
+    print("PM by:", event.source.nick, ">", event.arguments[0])
 
 #def on_privnotice(connection, event):
  #   print(event.source.nick, event.arguments[0])
@@ -518,6 +520,7 @@ class IRCbots():
                 savedclients[discordid]["nick"] = self.nick
                 savedclients[discordid]["channels"] = channels
                 settings.saveclients(savedclients)
+                print("made and saved:", savedclients[discordid])
                 self.conn.channels = channels
             else:
                 self.conn.channels = savedclients[discordid]["channels"]

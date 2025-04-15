@@ -437,7 +437,7 @@ async def on_message(message):
     # This is a message catcher, it comes before all the other commands cause it's responsible for making and connecting an IRC client for the user that just sent a message
     # This only gets triggeted if you enable the AUTOCLIENTS setting when running setupwizard.py to create or edit the config
 
-    if AUTOCLIENTS == True and authorid not in leftirc_chan[irc_chan] and cmd.startswith("!") == False and cmd != "!joinirc":
+    if AUTOCLIENTS == True and authorid not in leftirc_chan[irc_chan] and authorid not in leftirc and cmd.startswith("!") == False and cmd != "!joinirc":
         if authorid not in condict:
             if authorid in killed:
                 ctime = round(time.time(), 0)
@@ -449,7 +449,7 @@ async def on_message(message):
                 checknick = checknick[0:len(checknick)-3]
                 savedchans = classcon.savedclients[authorid]["channels"]
                 if irc_chan not in savedchans:
-                    savedchans.append(irc_chan)
+                    classcon.savedclients[authorid]["channels"].append(irc_chan)
             else:
                 checknick = fixnick(message.author.name)
             while checknick == False:
@@ -471,8 +471,9 @@ async def on_message(message):
                 ucon.join(irc_chan)
                 savedchans = classcon.savedclients[authorid]["channels"]
                 if irc_chan not in savedchans:
-                    savedchans.append(irc_chan)
+                    classcon.savedclients[authorid]["channels"].append(irc_chan)
                     settings.saveclients(classcon.savedclients)
+                    print(classcon.savedclients[authorid]["channels"])
 
     # botops commands block
     if authorid in DISCORDBOTOPS:
@@ -526,7 +527,7 @@ async def on_message(message):
                     ucon.join(irc_chan)
                     savedchans = classcon.savedclients[idarg]["channels"]
                     if irc_chan not in savedchans:
-                        savedchans.append(irc_chan)
+                        classcon.savedclients[idarg]["channels"].append(irc_chan)
                         settings.saveclients(classcon.savedclients)
                     return
                 else:
@@ -666,7 +667,7 @@ async def on_message(message):
                 ucon.join(irc_chan)
                 savedchans = classcon.savedclients[authorid]["channels"]
                 if irc_chan not in savedchans:
-                    savedchans.append(irc_chan)
+                    classcon.savedclients[authorid]["channels"].append(irc_chan)
                     settings.saveclients(classcon.savedclients)
                 return
             else:

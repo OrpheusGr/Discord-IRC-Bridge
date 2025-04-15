@@ -1,5 +1,5 @@
 __pycache__/
-manual_config_update.py
+manual*
 config.pkl
 savedclients.pkl
 somefiletoignoretest.txt
