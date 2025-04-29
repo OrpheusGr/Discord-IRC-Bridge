@@ -7,6 +7,8 @@ import settings
 import thetimers
 import os
 import logging
+import ssl
+import functools
 reactor = irc.client.Reactor()
 irc.client.ServerConnection.buffer_class.encoding = "utf-8"
 irc.client.ServerConnection.buffer_class.errors = "replace"
@@ -107,9 +109,9 @@ def send_to_matching(nick, message):
 
 def pop_from_channels(nick):
     for each_channel in channels_lists:
-        if nick in channels_lists[each_channel]:
-            if each_channel in channel_sets:
-                channels_lists[each_channel].pop(nick)
+        if nick in channels_lists[each_channel.lower()]:
+            if each_channel.lower() in channel_sets:
+                channels_lists[each_channel.lower()].pop(nick)
 
 def get_start_time():
     global start_time
@@ -322,7 +324,7 @@ def on_pubmsg(connection, event):
 def on_whoreply(connection, event):
     global channels_lists
     host = event.arguments[2]
-    nick = event.arguments[4]
+    nick = event.arguments[4].lower()
     #realname = event.arguments[6].split()[1]
     channel = event.arguments[0].lower()
     if channel not in channels_lists:
@@ -344,7 +346,7 @@ def on_join(connection, event):
     if connection_name != event.source.nick:
         if event.target.lower() not in channels_lists:
             channels_lists[event.target.lower()] = {}
-        channels_lists[event.target.lower()][event.source.nick] = {"host": event.source.host}
+        channels_lists[event.target.lower()][event.source.nick.lower()] = {"host": event.source.host}
         #print(channels_lists)
         if event.source.nick.lower() in botdict:
             did = botdict[event.source.nick.lower()]
@@ -371,7 +373,7 @@ def on_part(connection, event):
         return
     discord_chan = channel_sets[event.target.lower()]["real_chan"]
     if connection.get_nickname() != event.source.nick:
-        if event.source.nick in channels_lists[event.target.lower()]:
+        if event.source.nick.lower() in channels_lists[event.target.lower()]:
             channels_lists[event.target.lower()].pop(event.source.nick)
         #print(channels_lists)
         if len(event.arguments) > 0:
@@ -395,7 +397,7 @@ def on_quit(connection, event):
     else:
         reason = ""
     send_to_matching(event.source.nick, "<- **" + event.source.nick + " quit " + network + " " + reason + "**")
-    pop_from_channels(event.source.nick)
+    pop_from_channels(event.source.nick.lower())
     #print(channels_lists)
 
 def on_kick(connection, event):
@@ -406,8 +408,8 @@ def on_kick(connection, event):
         return
     discord_chan = channel_sets[event.target.lower()]["real_chan"]
     if connection == mom:
-        if knick in channels_lists[event.target.lower()]:
-            channels_lists[event.target.lower()].pop(knick)
+        if knick.lower() in channels_lists[event.target.lower()]:
+            channels_lists[event.target.lower()].pop(knick.lower())
         #print(channels_lists)
         try:
             extras = "(" + event.arguments[1] + ")"
@@ -448,15 +450,30 @@ def on_nick(connection, event):
     else:
         if connection.get_nickname() == event.source.nick:
             momobj.myprivmsg_line = event.source + " PRIVMSG"
-    event_msg = "**%s** *is now known as* **%s**" % (nick, newnick)
+    event_msg = "**%s** *is now known as* **%s**" % (nick, event.target)
     for each_channel in channels_lists:
         x = channels_lists[each_channel]
-        if nick in x:
-            prev = channels_lists[each_channel][nick]
-            channels_lists[each_channel].pop(nick)
+        if nick.lower() in x:
+            prev = channels_lists[each_channel][nick.lower()]
+            channels_lists[each_channel].pop(nick.lower())
             channels_lists[each_channel][newnick] = prev
             discord.send_my_message(channel_sets[each_channel]["real_chan"], event_msg)
         #print(channels_lists)
+
+def fixnick(nick):
+    new_nick = re.sub(r'[^A-Za-z0-9 ^\[\]\\{}`_-]+', '', nick)
+    if new_nick == "":
+        return False
+    if new_nick[0].isnumeric():
+        return "D_" + new_nick
+    else:
+        return new_nick
+
+def on_erroneusnickname(connection, event):
+    original = event.target
+    erroneous = event.arguments[0]
+    fixed = fixnick(erroneous)
+    connection.nick(fixed)
 
 def on_disconnect(connection, event):
     connection_name = connection.get_nickname()
@@ -520,13 +537,18 @@ class IRCbots():
                 savedclients[discordid]["nick"] = self.nick
                 savedclients[discordid]["channels"] = channels
                 settings.saveclients(savedclients)
-                print("made and saved:", savedclients[discordid])
+                #print("made and saved:", savedclients[discordid])
                 self.conn.channels = channels
             else:
                 self.conn.channels = savedclients[discordid]["channels"]
 
     def connect(self):
-        c = self.conn.connect(self.server, self.port, self.nick, None, "Discord", self.conn.discordid)
+        context = ssl.create_default_context()
+        wrapper = functools.partial(context.wrap_socket, server_hostname=self.server)
+        if SSL == True:
+            c = self.conn.connect(self.server, self.port, self.nick, None, "Discord", self.conn.discordid, connect_factory=irc.connection.Factory(wrapper=wrapper))
+        else:
+            c = self.conn.connect(self.server, self.port, self.nick, None, "Discord", self.conn.discordid)
         if self.mother:
             c.add_global_handler("pubmsg", on_pubmsg)
             c.add_global_handler("join", on_join)
@@ -543,7 +565,7 @@ class IRCbots():
             c.add_global_handler("error", on_error)
             c.add_global_handler("whoreply", on_whoreply)
             c.add_global_handler("privmsg", on_privmsg)
-            #c.add_global_handler("privnotice", on_privnotice)
+            c.add_global_handler("erroneusnickname", on_erroneusnickname)
 
     def on_ping(self, connection, event):
         if connection == mom:

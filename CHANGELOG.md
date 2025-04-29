@@ -1,3 +1,10 @@
+# April 29th 2025
+
+- Fixed a major bug that crippled the Bridge when someone changed their nick with !nick or a botop changed their nick with !fnick
+- Fixed a bug that didn't allow nick changes to be displayed on Discord and didn't keep the correct list of IRC users in a given channel
+- Added appropriate response to the erroneous nickname error
+- Added SSL Support
+
 # February 27th 2025
 
 - Fixed a bug that occured when a channel_set was removed where clients would still join it upon connection and leave it instantly.

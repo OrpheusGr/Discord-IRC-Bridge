@@ -82,6 +82,8 @@ def fixnick(nick):
     new_nick = re.sub(r'[^A-Za-z0-9 ^\[\]\\{}`_-]+', '', nick)
     if new_nick == "":
         return False
+    if new_nick[0].isnumeric():
+        return "D_" + new_nick
     else:
         return new_nick
 
@@ -473,7 +475,7 @@ async def on_message(message):
                 if irc_chan not in savedchans:
                     classcon.savedclients[authorid]["channels"].append(irc_chan)
                     settings.saveclients(classcon.savedclients)
-                    print(classcon.savedclients[authorid]["channels"])
+                    #print(classcon.savedclients[authorid]["channels"])
 
     # botops commands block
     if authorid in DISCORDBOTOPS:
@@ -582,7 +584,7 @@ async def on_message(message):
             if len(contentsplit) < 3:
                  send_my_message(message.channel, "Usage: !fnick @mention_here new_nick_here")
                  return
-            urequest = contentsplit[2]
+            urequest = fixnick(contentsplit[2])
             ucon = condict[idarg].conn
             uconick = ucon.get_nickname()
             if urequest == uconick or urequest + "[R]" == uconick:
@@ -592,8 +594,6 @@ async def on_message(message):
                 send_my_message(message.channel, "Another Discord User is using a simular/the same nick, please choose another one to avoid confusion.")
                 return
             ucon.nick(urequest + "[R]")
-            classcon.savedclients.pop(idarg)
-            classcon.savedclients[idarg] = {}
             classcon.savedclients[idarg]["nick"] = urequest + "[R]"
             settings.saveclients(classcon.savedclients)
             return
@@ -776,7 +776,7 @@ async def on_message(message):
         if len(contentsplit) == 1:
             send_my_message(message.channel, "Usage: !nick <nickhere>")
             return
-        urequest = contentsplit[1]
+        urequest = fixnick(contentsplit[1])
         ucon = condict[authorid].conn
         uconick = ucon.get_nickname()
         if urequest == uconick or urequest + "[R]" == uconick:

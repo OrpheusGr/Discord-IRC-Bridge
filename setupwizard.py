@@ -6,9 +6,9 @@ import pickle
 myprint_count = 0
 config = {}
 newchannel_sets = {}
-missing = 0
+#missing = 0
 
-default_values = {"NICKCHANGE": True, "TIMEKILLED": 1, "INACTIVITY": 0, "AUTOCLIENTS": False, "IDENTIFY": False, "NICKSERV_NAME": "NickServ", "NICKSERV_PASS": "passhere", "IDENTIFY_ALL": False, "NICKSERV_ACCOUNT": "acchere"}
+default_values = {"NICKCHANGE": True, "TIMEKILLED": 1, "INACTIVITY": 0, "AUTOCLIENTS": False, "IDENTIFY": False, "NICKSERV_NAME": "NickServ", "NICKSERV_PASS": "passhere", "IDENTIFY_ALL": False, "NICKSERV_ACCOUNT": "acchere", "SSL": False}
 
 def myprint(stuff, erase=0):
     global myprint_count
@@ -24,6 +24,8 @@ def fixnick(nick):
     new_nick = re.sub(r'[^A-Za-z0-9 ^\[\]\\{}`_-]+', '', nick)
     if new_nick == "":
         return False
+    if new_nick[0].isnumeric():
+        return "D_" + new_nick
     else:
         return new_nick
 
@@ -76,9 +78,18 @@ def save_config():
 def load_config():
     global config
     config = {}
+    missing = 0
     if os.path.getsize('config.pkl') > 0:
         with open('config.pkl', 'rb') as fp:
             config = pickle.load(fp)
+        for item in default_values:
+            if item not in config:
+                missing = 1
+                config[item] = default_values[item]
+            if missing == 1:
+                print("UPDATE: New Setting(s) from last update loaded with their default values. You may wanna edit them!")
+                save_config()
+        time.sleep(1)
     else:
         config = {}
 
@@ -118,7 +129,7 @@ if x:
         srvsplit = IRCSERVER.split(".")
     config["IRCSERVER"] = IRCSERVER
     myprint(bcolors.OKGREEN + "The IRC server is set to: " + IRCSERVER + bcolors.OFF)
-    time.sleep(2)
+    time.sleep(1)
     myprint("", 1)
     myprint(bcolors.OKCYAN + "Now please input the IRC port. Leave empty for: default 6667" + bcolors.OFF)
     IRCPORT = input("IRC port: ")
@@ -131,9 +142,16 @@ if x:
     IRCPORT = int(IRCPORT)
     myprint(bcolors.OKGREEN + "Port is set to " + str(IRCPORT) + bcolors.OFF)
     config["IRCPORT"] = IRCPORT
-    time.sleep(2)
+    time.sleep(1)
     myprint("", 1)
-    time.sleep(2)
+    myprint(bcolors.OKCYAN + "Do you want to use SSL? (y/n)" + bcolors.OFF)
+    x = yninput()
+    if x == True:
+        config["SSL"] = True
+    else:
+        config["SSL"] = False
+    myprint("", 1)
+    time.sleep(1)
     myprint(bcolors.OKCYAN + "Next, input the bot's nick! (default: Bridge) Accepted characters: A-Z a-z 0-9 ^\[\]\\{}`_-]" + bcolors.OFF)
     IRCNICK = input()
     FIXEDIRCNICK = fixnick(IRCNICK)
@@ -152,7 +170,7 @@ if x:
             myprint(bcolors.OKGREEN + "The Bot's IRC nick is set to " + IRCNICK + bcolors.OFF)
             check = 0
     config["IRCNICK"] = IRCNICK
-    time.sleep(2)
+    time.sleep(1)
     myprint("", 1)
     myprint(bcolors.OKCYAN + "Now we need to write a list of IRC nicks that will use the bot's moderation commands")
     myprint("Just type the nicks seperated by spaces (e.g Nick John Mary)" + bcolors.OFF)
@@ -215,14 +233,14 @@ if x:
         DISCORDSERVER = input("Discord server ID: ")
     config["DISCORDSERVER"] = DISCORDSERVER
     myprint(bcolors.OKGREEN + "Alright! The Discord server ID is set to " + DISCORDSERVER + bcolors.OFF)
-    time.sleep(2)
+    time.sleep(1)
     myprint("", 1)
     myprint(bcolors.OKCYAN + "Next we'll need the bot's token, you'll find it im the Discord Developer board")
     myprint("It should be an alphanumerical value" + bcolors.OFF)
     TOKEN = input("App/Bot token: ")
     config["TOKEN"] = TOKEN
     myprint(bcolors.OKGREEN + "Bot token is set to: " + TOKEN + bcolors.OFF)
-    time.sleep(2)
+    time.sleep(1)
     myprint("", 1)
     myprint(bcolors.OKCYAN + "Now we need to set a list of Discord bot ops, just like IRC, but instead of nicks...")
     myprint("You'll have to input their User IDs, which you can copy from eacha user's profile")
@@ -230,7 +248,7 @@ if x:
     DISCORDBOTOPS = input("Discord Bot operators' ID'S: ")
     config["DISCORDBOTOPS"] = DISCORDBOTOPS
     myprint(bcolors.OKGREEN + "The list of Discord Bot Ops is set to: " + DISCORDBOTOPS + bcolors.OFF)
-    time.sleep(2)
+    time.sleep(1)
     myprint("", 1)
     myprint(bcolors.OKCYAN + "How much time, in seconds, should pass before a Discord user can rejoin IRC after a Discord Bot Op uses !kill  If you leave it empty or set it to 0, kills will be permanent" + bcolors.OFF)
     day = 3600 * 24
@@ -246,7 +264,7 @@ if x:
     TIMEKILLED = int(TIMEKILLED)
     config["TIMEKILLED"] = TIMEKILLED
     myprint(bcolors.OKGREEN + "Kill time is set to: " + str(TIMEKILLED) + bcolors.OFF)
-    time.sleep(2)
+    time.sleep(1)
     myprint("", 1)
     myprint(bcolors.OKCYAN + "After how many seconds of inactivity should IRC clients be discconnected? Set to 0 or leave empty to keep this disabled." + bcolors.OFF)
     INACTIVITY = input()
@@ -258,7 +276,7 @@ if x:
         INACTIVITY = "0"
     config["INACTIVITY"] = int(INACTIVITY)
     myprint(bcolors.OKGREEN + "Inactivity disconnection is set to: " + str(INACTIVITY) + " seconds." + bcolors.OFF)
-    time.sleep(2)
+    time.sleep(1)
     myprint("", 1)
     myprint("Should clients be created with a command by each user or automatically when a user sends a message? (y/n) y = command n = automatically")
     AUTOCLIENTS = yninput()
@@ -268,7 +286,7 @@ if x:
     else:
         config["AUTOCLIENTS"] = True
         myprint(bcolors.OKGREEN + "Clients will connect when a user uses the !joinirc command" + bcolors.OFF)
-    time.sleep(2)
+    time.sleep(1)
     myprint("", 1)
     myprint(bcolors.OKCYAN + "Should Discord users be allowed to use !nick to change their client's nick on IRC? y/n" + bcolors.OFF)
     NICKCHANGE = yninput()
@@ -318,7 +336,7 @@ if x:
         setup_channels = yninput()
     save_config()
     myprint("This Wizard has reached its end! Here are all your settings!")
-    time.sleep(2)
+    time.sleep(1)
     paste = ""
     for item in config:
         value = config[item]
@@ -326,12 +344,6 @@ if x:
         myprint(line)
         myprint("-")
 else:
-    for item in default_values:
-        if item not in config:
-            missing = 1
-            config[item] = default_values[item]
-        if missing == 1:
-            save_config()
     myprint("", 1)
     myprint("Do you want to edit any values in the config? y/n")
     x = yninput()
@@ -357,7 +369,7 @@ else:
                     if x != "":
                         config[item] = x
                     myprint(item + " = " + str(config[item]))
-            time.sleep(2)
+            time.sleep(1)
             myprint("", 1)
         myprint("", 1)
         myprint("Do you want to edit any of the channel sets?")
