@@ -608,7 +608,7 @@ class IRCbots():
             joint = msg[i][0]
             #print("joint >", joint)
             if action == False:
-                self.conn.privmsg("#hwjwjw", joint)
+                self.conn.privmsg(channel, joint)
             else:
                 self.conn.action(channel, joint)
         self.lastmsg = round(time.time(),0)
