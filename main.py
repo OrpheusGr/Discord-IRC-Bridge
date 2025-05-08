@@ -9,7 +9,7 @@ logger_classcon.setLevel(logging.ERROR)
 
 # Create a FileHandler for logging to a file
 file_handler = logging.FileHandler('classcon_errors.log')  # Log to this file
-file_handler.setLevel(logging.ERROR)
+file_handler.setLevel(logging.DEBUG)
 
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(formatter)

@@ -24,6 +24,18 @@ lastchannel_irc_disc = ""
 
 logger = logging.getLogger(__name__)
 
+logger_client_raw = logging.getLogger('irc.client')
+logger_client_raw.setLevel(logging.DEBUG)
+
+# Create a FileHandler for logging to a file
+file_handler = logging.FileHandler('client_raw.log')  # Log to this file
+file_handler.setLevel(logging.DEBUG)
+
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+logger_client_raw.addHandler(file_handler)
+
+
 # Load the config
 def load_the_config():
     global savedclients
@@ -101,11 +113,11 @@ def sendtolastchannel(message):
 
 def send_to_matching(nick, message):
     for each_channel in channels_lists:
-        if nick in channels_lists[each_channel]:
+        if nick.lower() in channels_lists[each_channel.lower()]:
             #print(each_channel, "->", channels_lists[each_channel])
-            if each_channel in channel_sets:
+            if each_channel.lower() in channel_sets:
                 #print("isinchannelsets")
-                discord.send_my_message(channel_sets[each_channel]["real_chan"], message)
+                discord.send_my_message(channel_sets[each_channel.lower()]["real_chan"], message)
 
 def pop_from_channels(nick):
     for each_channel in channels_lists:
@@ -505,7 +517,7 @@ def on_disconnect(connection, event):
         botdict.pop(cn.lower())
 
 def on_error(connection, event):
-    print(event.source, event.arguments)
+    print(event.source, event.arguments, event.target)
 
 def on_privmsg(connection, event):
     print("PM by:", event.source.nick, ">", event.arguments[0])
@@ -596,7 +608,7 @@ class IRCbots():
             joint = msg[i][0]
             #print("joint >", joint)
             if action == False:
-                self.conn.privmsg(channel, joint)
+                self.conn.privmsg("#hwjwjw", joint)
             else:
                 self.conn.action(channel, joint)
         self.lastmsg = round(time.time(),0)

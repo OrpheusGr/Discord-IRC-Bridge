@@ -1,4 +1,5 @@
 __pycache__/
+client_raw.log
 manual*
 config.pkl
 savedclients.pkl

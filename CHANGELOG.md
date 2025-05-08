@@ -1,3 +1,8 @@
+# March 8th 2025
+
+- Fixed a bug that cause the Bridge not to show some quit messages on Discord
+- Added DEBUG logging to a seperate file so the raw IRC data can be seen for easier... well... debugging
+
 # April 29th 2025
 
 - Fixed a major bug that crippled the Bridge when someone changed their nick with !nick or a botop changed their nick with !fnick
