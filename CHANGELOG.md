@@ -1,3 +1,6 @@
+# May 24th 2025
+- Fixed a couple of minor bugs related or connected to the part event
+
 # March 8th 2025
 
 - Fixed a bug that cause the Bridge not to show some quit messages on Discord

@@ -212,7 +212,7 @@ def find_nick_by_id(uid):
 
 def ison_chan(channel, nick):
     global channels_lists
-    if nick in channels_lists[channel]:
+    if nick.lower() in channels_lists[channel]:
         return True
     else:
         return False
@@ -386,7 +386,7 @@ def on_part(connection, event):
     discord_chan = channel_sets[event.target.lower()]["real_chan"]
     if connection.get_nickname() != event.source.nick:
         if event.source.nick.lower() in channels_lists[event.target.lower()]:
-            channels_lists[event.target.lower()].pop(event.source.nick)
+            channels_lists[event.target.lower()].pop(event.source.nick.lower())
         #print(channels_lists)
         if len(event.arguments) > 0:
             reason = "(" + event.arguments[0] + ")"
