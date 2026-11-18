@@ -33,7 +33,7 @@ lastmsg = {}
 sendmymsg_lastcall = 0
 sendmymsg_delay = 0
 lastchannel_disc_irc = ""
-handler = logging.FileHandler(filename='discordc_errors.log', encoding='utf-8', mode='w')
+#handler = logging.FileHandler(filename='discordc_errors.log', encoding='utf-8', mode='w')
 
 for i in cmdlist:
     cooldown[i] = {}
@@ -814,7 +814,7 @@ async def on_message(message):
         print("[Discord] " + message.channel.name + " > " + irc_chan + " " + message.author.name + ": " + content)
 
 def run():
-    bot.run(TOKEN, log_handler=handler, log_level=logging.ERROR)
+    bot.run(TOKEN)
 
 @bot.event
 async def on_ready():

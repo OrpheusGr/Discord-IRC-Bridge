@@ -22,6 +22,7 @@ channels_lists = {}
 join_delay = 0
 lastchannel_irc_disc = ""
 
+'''
 logger = logging.getLogger(__name__)
 
 logger_client_raw = logging.getLogger('irc.client')
@@ -34,7 +35,7 @@ file_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(formatter)
 logger_client_raw.addHandler(file_handler)
-
+'''
 
 # Load the config
 def load_the_config():
